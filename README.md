@@ -415,6 +415,7 @@ Option 1 \- with Cloud Console:
        1. View logs on every run to see if the script executed with a success status. 
 
 Option 2 \- with CLI:
+
     ```
     # Get the latest execution ID
     LATEST_EXECUTION=$(gcloud run jobs executions list --job backup-script-job --limit=1 --format="value(name)")
