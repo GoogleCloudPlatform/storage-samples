@@ -27,7 +27,7 @@ This guide will enable you to:
 
 **Please ensure that:**
 
-1. The backup vault service agent for the vault you intend to use to backup your VMs has the `roles/backupdr.computeEngineOperator` role in the VM project. If you do not have the correct Role for the backup vault provided in your VM Project, the script will succeed but you will encounter a failure error.    
+1. The backup vault service agent for the vault you intend to use to backup your VMs has the `roles/backupdr.computeEngineOperator` role in the VM project. If you do not have the correct Role for the backup vault provided in your VM Project, the script will succeed but you will encounter a failure error.  
 2. Both projects have the necessary APIs enabled  
 3. The user running the script has the [required permissions in both projects](https://cloud.google.com/backup-disaster-recovery/docs/cloud-console/compute/compute-instance-backup#backup-user)
 
@@ -35,19 +35,33 @@ This guide will enable you to:
 
 Follow the below steps to apply your protection:
 
-1. Create and save your **backup\_script.sh.**   
+1. Create and save your **backup\_script.sh.**  
+     
 2. **Open Google Cloud Shell**:  
+     
    1. Navigate to [Google Cloud Console.](https://console.cloud.google.com/)  
-   2. Open the Cloud Shell by clicking the terminal icon in the top-right corner.  
-3. **Open the Cloud Shell File Upload Dialog**:  
-   1. In the Cloud Shell terminal, click the **three vertical dots** in the top-right corner of the Cloud Shell window.  
-   2. Select **Upload**.  
-4. **Select Your File**:  
-   1. Choose `backup_script.sh` from your local machine.  
-   2. The file will upload to the home directory (`~/`) in the Cloud Shell.  
-5. Run `chmod +x backup_script.sh` in your cloudshell to make it executable.  
-6. Run your file by providing the following required **parameters**:
+   2. Open the Cloud Shell by clicking the terminal icon in the top-right corner.
 
+   
+
+3. **Open the Cloud Shell File Upload Dialog**:  
+     
+   1. In the Cloud Shell terminal, click the **three vertical dots** in the top-right corner of the Cloud Shell window.  
+   2. Select **Upload**.
+
+   
+
+2. **Select Your File**:  
+     
+   1. Choose `backup_script.sh` from your local machine.  
+   2. The file will upload to the home directory (`~/`) in the Cloud Shell.
+
+   
+
+2. Run `chmod +x backup_script.sh` in your cloudshell to make it executable.  
+     
+3. Run your file by providing the following required **parameters**:  
+     
    1. `--unprotect:`(Optional) Use this flag and skip (b) \- (d) if you intent to only remove active backup plans associated with VMs with certain tags.  
    2. `--backup-project-id`: The project ID where the backup plan is located.  
    3. `--location`: The region where the backup plan is located (e.g., `us-central1`).  
@@ -55,14 +69,21 @@ Follow the below steps to apply your protection:
    5. `--tag-key`: The tag key used to identify VMs (e.g., `environment`). See [here](https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing#creating_tag) on how to create and manage tag keys.  
    6. `--tag-value`: The tag value used to identify VMs (e.g., `production`). See [here](https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing#console_2) on how to create and manage tag values.
 
-   **Note: You must provide at least 1 project OR 1 folder.** 
+   
+
+   **Note: You must provide at least 1 project OR 1 folder.**
+
+   
 
    7. `--projects`: (Optional) A comma-separated list of project IDs to include.  
    8. `--folders`: (Optional) A comma-separated list of folder IDs whose projects you want to include  (e.g.,  \--folders 345678901234).  
       1. NOTE: Please ensure that you have all required permissions for accessing all projects within the specific folders  
-      2. NOTE: Please ensure the Backup Vault Service Agent is provided the required roles on the specified folders.   
-   9. `--exclude-projects`: (Optional) A comma-separated list of project IDs to exclude from processing (e.g., –exclude-projects projectC,projectD).  
-7. Leverage the below examples
+      2. NOTE: Please ensure the Backup Vault Service Agent is provided the required roles on the specified folders.  
+   9. `--exclude-projects`: (Optional) A comma-separated list of project IDs to exclude from processing (e.g., –exclude-projects projectC,projectD).
+
+   
+
+2. Leverage the below examples
 
 ```
 bash ./"backup_script.sh" \
@@ -89,11 +110,53 @@ This command will automatically remove any backup plan association from VMs with
 
 # Automated GCP VM Backup Management
 
-## Overview
+[Overview](#overview-1)
+
+[Prerequisites](#prerequisites)
+
+[Detailed Implementation Steps](#detailed-implementation-steps)
+
+[1\. Initial Setup in Cloud Shell](#1.-initial-setup-in-cloud-shell)
+
+[2\. Create Working Directory and Files](#2.-create-working-directory-and-files)
+
+[3\. Set Up Container Registry](#3.-set-up-container-registry)
+
+[4\. Create and Configure Service Account](#4.-create-and-configure-service-account)
+
+[5\. Verify Backup Plan](#5.-verify-backup-plan)
+
+[6\. Create Cloud Run Job](#6.-create-cloud-run-job)
+
+[7\. Set Up Cloud Scheduler](#7.-set-up-cloud-scheduler)
+
+[8\. Testing](#8.-testing)
+
+[9\. Monitoring and Troubleshooting](#9.-monitoring-and-troubleshooting)
+
+[View Job History](#view-job-history)
+
+[Check Scheduler Job Status](#check-scheduler-job-status)
+
+[Common Issues and Solutions](#common-issues-and-solutions)
+
+[10\. Maintenance Tasks](#10.-maintenance-tasks)
+
+[Update Job Configuration](#update-job-configuration)
+
+[Update Schedule](#update-schedule)
+
+[Important Notes](#important-notes)
+
+[Best Practices](#best-practices)
+
+## 
+
+## Overview {#overview-1}
 
 This guide provides detailed, step-by-step instructions for implementing an automated backup management system in Google Cloud Platform (GCP). This solution automates VM backup management using Cloud Run Jobs, Cloud Scheduler, and custom scripts.
 
-## Prerequisites
+## Prerequisites {#prerequisites}
 
 1. Access to Google Cloud Console  
 2. Required GCP Projects:  
@@ -111,9 +174,9 @@ gcloud services enable \
     backupdr.googleapis.com
 ```
 
-## Detailed Implementation Steps
+## Detailed Implementation Steps {#detailed-implementation-steps}
 
-### 1\. Initial Setup in Cloud Shell
+### 1\. Initial Setup in Cloud Shell {#1.-initial-setup-in-cloud-shell}
 
 1. Open Google Cloud Console ([https://console.cloud.google.com](https://console.cloud.google.com))  
 2. Click the "Activate Cloud Shell" button (\>\_ icon) at the top right  
@@ -128,7 +191,7 @@ gcloud config get-value project
 gcloud config set project prod-demo-vault
 ```
 
-### 2\. Create Working Directory and Files
+### 2\. Create Working Directory and Files {#2.-create-working-directory-and-files}
 
 1. Create and navigate to working directory:
 
@@ -175,6 +238,7 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 ```
 
 4. Save the Dockerfile:  
+     
    - Press Ctrl+X  
    - Press Y to confirm saving  
    - Press Enter to keep the filename
@@ -233,13 +297,15 @@ options:
 ```
 
 7. Save cloudbuild.yaml:  
+     
    - Press Ctrl+X  
    - Press Y to confirm saving  
    - Press Enter to keep the filename
 
    
 
-8. Copy your backup_script.sh to Cloud Shell:  
+8. Copy your backup\_script.sh to Cloud Shell:  
+     
    - Click the three-dot menu in Cloud Shell  
    - Select "Upload file"  
    - Choose your backup\_script.sh file  
@@ -253,7 +319,7 @@ options:
 chmod +x backup_script.sh
 ```
 
-### 3\. Set Up Container Registry
+### 3\. Set Up Container Registry {#3.-set-up-container-registry}
 
 1. Create Artifact Registry repository:
 
@@ -276,7 +342,7 @@ gcloud builds submit --config cloudbuild.yaml
 gcloud builds list --limit=1
 ```
 
-### 4\. Create and Configure Service Account
+### 4\. Create and Configure Service Account {#4.-create-and-configure-service-account}
 
 1. Create the service account:
 
@@ -348,7 +414,7 @@ gcloud projects add-iam-policy-binding prod-demo-app \
     --condition=None
 ```
 
-### 5\. Verify Backup Plan
+### 5\. Verify Backup Plan {#5.-verify-backup-plan}
 
 1. List existing backup plans to get the exact name:
 
@@ -361,7 +427,7 @@ gcloud alpha backup-dr backup-plans list \
 
 2. Note the full backup plan name from the output (it should look like: "projects/prod-demo-vault/locations/us-central1/backupPlans/bp-bronze")
 
-### 6\. Create Cloud Run Job
+### 6\. Create Cloud Run Job {#6.-create-cloud-run-job}
 
 1. Create the Cloud Run job:
 
@@ -375,7 +441,7 @@ gcloud run jobs create backup-script-job \
     --task-timeout=3600s
 ```
 
-### 7\. Set Up Cloud Scheduler
+### 7\. Set Up Cloud Scheduler {#7.-set-up-cloud-scheduler}
 
 1. Grant additional permissions for scheduler:
 
@@ -398,7 +464,7 @@ gcloud scheduler jobs create http backup-script-scheduler \
     --oauth-service-account-email=backup-script-sa@prod-demo-vault.iam.gserviceaccount.com
 ```
 
-### 8\. Testing
+### 8\. Testing {#8.-testing}
 
 1. Execute the job manually:  
    You may be asked to pick a region. This must be the same region as your backup plan.
@@ -407,38 +473,40 @@ gcloud scheduler jobs create http backup-script-scheduler \
 gcloud run jobs execute backup-script-job
 ```
 
-2. Check execution status with\
-Option 1 \- with Cloud Console:  
-    1. Navigate to [Cloud Run Jobs](https://pantheon.corp.google.com/run/jobs).   
-    2. Here you will find your “backup-script-job”. Click into the details.  
-    3. View a history of all passed runs that have been executed and their status.   
-       1. View logs on every run to see if the script executed with a success status. 
+2. Check execution status with  
+   Option 1 \- with Cloud Console:  
+   1. Navigate to [Cloud Run Jobs](https://pantheon.corp.google.com/run/jobs).  
+   2. Here you will find your “backup-script-job”. Click into the details.  
+   3. View a history of all passed runs that have been executed and their status.  
+      1. View logs on every run to see if the script executed with a success status.
 
-Option 2 \- with CLI:
+   Option 2 \- with CLI:
 
-    ```
-    # Get the latest execution ID
-    LATEST_EXECUTION=$(gcloud run jobs executions list --job backup-script-job --limit=1 --format="value(name)")
+````
+```
+# Get the latest execution ID
+LATEST_EXECUTION=$(gcloud run jobs executions list --job backup-script-job --limit=1 --format="value(name)")
 
-    # View logs
-    gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=backup-script-job AND resource.labels.execution_name=${LATEST_EXECUTION}" --limit=100 --format="table(textPayload)"
-    ```
+# View logs
+gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=backup-script-job AND resource.labels.execution_name=${LATEST_EXECUTION}" --limit=100 --format="table(textPayload)"
+```
+````
 
-### 9\. Monitoring and Troubleshooting
+### 9\. Monitoring and Troubleshooting {#9.-monitoring-and-troubleshooting}
 
-#### View Job History
+#### View Job History {#view-job-history}
 
 ```
 gcloud run jobs executions list --job backup-script-job
 ```
 
-#### Check Scheduler Job Status
+#### Check Scheduler Job Status {#check-scheduler-job-status}
 
 ```
 gcloud scheduler jobs list
 ```
 
-#### Common Issues and Solutions
+#### Common Issues and Solutions {#common-issues-and-solutions}
 
 1. **Permission Denied Errors**  
      
@@ -462,23 +530,23 @@ gcloud scheduler jobs list
    - Check if all required APIs are enabled  
    - Ensure service account has proper project access
 
-### 10\. Maintenance Tasks
+### 10\. Maintenance Tasks {#10.-maintenance-tasks}
 
-#### Update Job Configuration
+#### Update Job Configuration {#update-job-configuration}
 
 ```
 gcloud run jobs update backup-script-job \
     [include any parameters you want to change]
 ```
 
-#### Update Schedule
+#### Update Schedule {#update-schedule}
 
 ```
 gcloud scheduler jobs update http backup-script-scheduler \
     --schedule="NEW_SCHEDULE"
 ```
 
-## Important Notes
+## Important Notes {#important-notes}
 
 - All commands assume you're in the test-docker directory  
 - Replace project IDs if different from examples  
@@ -487,7 +555,7 @@ gcloud scheduler jobs update http backup-script-scheduler \
 - Job will retry up to 3 times on failure  
 - All permissions are set without conditions for simplicity
 
-## Best Practices
+## Best Practices {#best-practices}
 
 1. Regularly monitor job execution logs  
 2. Keep track of successful/failed backups  
