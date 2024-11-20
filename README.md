@@ -65,8 +65,13 @@ Follow the below steps to apply your protection:
 7. Leverage the below examples
 
 ```
-bash ./"backup_script.sh" \--backup-project-id my-backup-project \--location us-central1 \--backup-plan bp-bronze \--tag-key environment \
---tag-value test \--projects project1,project2,project3 \
+bash ./"backup_script.sh" \
+--backup-project-id my-backup-project \
+--location us-central1 \
+--backup-plan bp-bronze \
+--tag-key environment \
+--tag-value test \
+--projects project1,project2,project3 \
 --folders 345678901234
 ```
 
@@ -74,8 +79,10 @@ This command will automatically associate backup plan `bp-bronze` to VMs in `pro
 
 ```
 bash ./"backup_script.sh" \
--- unprotect--tag-key environment \
---tag-value test \--projects project1
+-- unprotect
+--tag-key environment \
+--tag-value test \
+--projects project1
 ```
 
 This command will automatically remove any backup plan association from VMs within `project1` that are tagged with `environment:test`.
@@ -232,7 +239,7 @@ options:
 
    
 
-8. Copy your [backup script](https://paste.googleplex.com/4785933387038720) to Cloud Shell:  
+8. Copy your backup_script.sh to Cloud Shell:  
    - Click the three-dot menu in Cloud Shell  
    - Select "Upload file"  
    - Choose your backup\_script.sh file  
