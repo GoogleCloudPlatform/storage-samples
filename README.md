@@ -407,7 +407,7 @@ gcloud scheduler jobs create http backup-script-scheduler \
 gcloud run jobs execute backup-script-job
 ```
 
-2. Check execution status with
+2. Check execution status with\
   Option 1 \- with Cloud Console:  
     1. Navigate to [Cloud Run Jobs](https://pantheon.corp.google.com/run/jobs).   
     2. Here you will find your “backup-script-job”. Click into the details.  
