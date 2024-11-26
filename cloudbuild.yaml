@@ -1,21 +1,7 @@
 steps:
-  # Configure docker authentication
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'auth'
-      - 'configure-docker'
-      - 'us-central1-docker.pkg.dev'
-
-  # Debug step to show environment
+  # Print the working directory contents for debugging
   - name: 'ubuntu'
-    args: 
-      - bash
-      - -c
-      - |
-        echo "Current directory contents:"
-        ls -la
-        echo "Project ID: $PROJECT_ID"
-        echo "Build ID: $BUILD_ID"
+    args: ['ls', '-la']
     
   # Build the container
   - name: 'gcr.io/cloud-builders/docker'
@@ -23,7 +9,6 @@ steps:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
-      - '--no-cache'
       - '.'
   
   # Push to Artifact Registry
@@ -34,6 +19,3 @@ steps:
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
