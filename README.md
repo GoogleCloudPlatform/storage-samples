@@ -150,8 +150,6 @@ This command will automatically remove any backup plan association from VMs with
 
 [Best Practices](#best-practices)
 
-## 
-
 ## Overview {#overview-1}
 
 This guide provides detailed, step-by-step instructions for implementing an automated backup management system in Google Cloud Platform (GCP). This solution automates VM backup management using Cloud Run Jobs, Cloud Scheduler, and custom scripts.
@@ -231,10 +229,11 @@ echo "Current project: $(gcloud config get-value project)"\n\
 \n\
 # Run the backup script with provided arguments\n\
 exec /app/backup_script.sh "$@"' > /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+   chmod +x /app/entrypoint.sh
 
 # Set the entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
+
 ```
 
 4. Save the Dockerfile:  
@@ -252,48 +251,30 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 nano cloudbuild.yaml
 ```
 
-6. Copy and paste this content into cloudbuild.yaml:
+6. Copy and paste this content into cloudbuild.yaml: Make sure your [XXX-compute@developer.gserviceaccount.com](mailto:XXX-compute@developer.gserviceaccount.com) has Roles: GCS Object Lister, Logs Writer, and Storage Object User.
 
 ```
 steps:
-  # Configure docker authentication
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'auth'
-      - 'configure-docker'
-      - 'us-central1-docker.pkg.dev'
-
-  # Debug step to show environment
-  - name: 'ubuntu'
-    args: 
-      - bash
-      - -c
-      - |
-        echo "Current directory contents:"
-        ls -la
-        echo "Project ID: $PROJECT_ID"
-        echo "Build ID: $BUILD_ID"
-    
-  # Build the container
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
-      - '--no-cache'
-      - '.'
+ # Print the working directory contents for debugging
+ - name: 'ubuntu'
+   args: ['ls', '-la']
   
+ # Build the container
+ - name: 'gcr.io/cloud-builders/docker'
+   args:
+     - 'build'
+     - '-t'
+     - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
+     - '.'
   # Push to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
+ - name: 'gcr.io/cloud-builders/docker'
+   args:
+     - 'push'
+     - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
+ - 'us-central1-docker.pkg.dev/$PROJECT_ID/backup-scripts/backup-script:latest'
 
-options:
-  logging: CLOUD_LOGGING_ONLY
 ```
 
 7. Save cloudbuild.yaml:  
@@ -330,16 +311,25 @@ gcloud artifacts repositories create backup-scripts \
     --description="Repository for backup scripts"
 ```
 
-2. Build and push the container:
+2. Build locally
 
 ```
-gcloud builds submit --config cloudbuild.yaml
+# Build locally 
+docker build -t backup-script:latest .
 ```
 
-3. Verify the build succeeds by checking the build logs in the console or using:
+3. Tag for Artifact Registry. Update the project name to be your current project where backups reside. 
 
 ```
-gcloud builds list --limit=1
+# Tag for Artifact Registry 
+docker tag backup-script:latest us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/backup-scripts/backup-script:latest 
+```
+
+4. Push to Artifact Registry.  Update the project name to be your current project where backups reside. 
+
+```
+# Push to Artifact Registry 
+docker push us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/backup-scripts/backup-script:latest
 ```
 
 ### 4\. Create and Configure Service Account {#4.-create-and-configure-service-account}
@@ -352,64 +342,64 @@ gcloud iam service-accounts create backup-script-sa \
     --display-name="Backup Script Service Account"
 ```
 
-2. Grant permissions on backup project (prod-demo-vault):
+2. Grant permissions on the backup project where your backup plan and backup vaults reside (YOUR-PROJECT-NAME):
 
 ```
 # Base permissions
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/viewer" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/backupdr.admin" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/iam.serviceAccountUser" \
     --condition=None
 
 # Additional required permissions (added based on troubleshooting)
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/backupdr.computeEngineBackupAdmin" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/compute.instanceAdmin.v1" \
     --condition=None
 ```
 
-3. Grant permissions on target project (prod-demo-app):
+3. Grant permissions on target project (TARGET-PROJECT-NAME):
 
 ```
 # Base permissions
-gcloud projects add-iam-policy-binding prod-demo-app \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/viewer" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-app \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/resourcemanager.tagViewer" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-app \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/compute.viewer" \
     --condition=None
 
 # Additional required permissions (added based on troubleshooting)
-gcloud projects add-iam-policy-binding prod-demo-app \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/backupdr.computeEngineBackupAdmin" \
     --condition=None
 
-gcloud projects add-iam-policy-binding prod-demo-app \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/compute.instanceAdmin.v1" \
     --condition=None
 ```
@@ -420,25 +410,33 @@ gcloud projects add-iam-policy-binding prod-demo-app \
 
 ```
 gcloud alpha backup-dr backup-plans list \
-    --project=prod-demo-vault \
+    --project=YOUR-PROJECT-NAME \
     --location=us-central1 \
     --format="table(name,state,description)"
 ```
 
-2. Note the full backup plan name from the output (it should look like: "projects/prod-demo-vault/locations/us-central1/backupPlans/bp-bronze")
+2. Note the full backup plan name from the output.  
+   - it should look like: "projects/prod-demo-vault/locations/us-central1/backupPlans/bp-bronze"
 
 ### 6\. Create Cloud Run Job {#6.-create-cloud-run-job}
 
-1. Create the Cloud Run job:
+1. Create the Cloud Run job. Be sure to update YOUR-PROJECT-NAME with your project.  
+   - If you want to make changes after creation, you can modify through editing the YAML in the Cloud run Jobs YAML tab. 
 
 ```
 gcloud run jobs create backup-script-job \
-    --image=us-central1-docker.pkg.dev/prod-demo-vault/backup-scripts/backup-script:latest \
-    --service-account=backup-script-sa@prod-demo-vault.iam.gserviceaccount.com \
+    --image=us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/backup-scripts/backup-script:latest \
+    --service-account=backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com \
     --region=us-central1 \
-    --args="--backup-project-id","prod-demo-vault","--location","us-central1","--backup-plan","bp-bronze","--tag-key","environment","--tag-value","production","--projects","prod-demo-app" \
+    --args="--backup-project-id=YOUR-PROJECT-NAME" \
+    --args="--location=us-central1" \
+    --args="--backup-plan=bp-automation" \
+    --args="--tag-key=environment" \
+    --args="--tag-value=production" \
+    --args="--projects=TARGET-PROJECT-NAME" \
     --max-retries=3 \
     --task-timeout=3600s
+
 ```
 
 ### 7\. Set Up Cloud Scheduler {#7.-set-up-cloud-scheduler}
@@ -446,8 +444,8 @@ gcloud run jobs create backup-script-job \
 1. Grant additional permissions for scheduler:
 
 ```
-gcloud projects add-iam-policy-binding prod-demo-vault \
-    --member="serviceAccount:backup-script-sa@prod-demo-vault.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
+    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
     --role="roles/run.invoker" \
     --condition=None
 ```
@@ -459,9 +457,9 @@ gcloud projects add-iam-policy-binding prod-demo-vault \
 gcloud scheduler jobs create http backup-script-scheduler \
     --schedule="0 0 * * *" \
     --location=us-central1 \
-    --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/prod-demo-vault/jobs/backup-script-job:run" \
+    --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/YOUR-PROJECT-NAME/jobs/backup-script-job:run" \
     --http-method=POST \
-    --oauth-service-account-email=backup-script-sa@prod-demo-vault.iam.gserviceaccount.com
+    --oauth-service-account-email=backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com
 ```
 
 ### 8\. Testing {#8.-testing}
@@ -475,10 +473,13 @@ gcloud run jobs execute backup-script-job
 
 2. Check execution status with  
    Option 1 \- with Cloud Console:  
-   1. Navigate to [Cloud Run - 'Jobs' tab](https://console.cloud.google.com/run).  
+     
+   1. Navigate to [Cloud Run \- 'Jobs' tab](https://console.cloud.google.com/run).  
    2. Here you will find your “backup-script-job”. Click into the details.  
    3. View a history of all passed runs that have been executed and their status.  
       1. View logs on every run to see if the script executed with a success status.
+
+   
 
    Option 2 \- with CLI:
 
