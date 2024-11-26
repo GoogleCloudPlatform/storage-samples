@@ -421,77 +421,46 @@ process_project() {
         return 1
     fi
 
-    # Get the full tag key name and value name
-    echo "Getting tag details for project ${PROJECT_ID}..."
-    TAG_KEY_NAME=$(gcloud resource-manager tags keys list \
-        --parent="projects/${PROJECT_ID}" \
-        --filter="shortName=${TAG_KEY}" \
-        --format="value(name)")
-
-    if [[ -z "${TAG_KEY_NAME}" ]]; then
-        echo "ERROR: Could not find tag key '${TAG_KEY}' in project '${PROJECT_ID}'. Please check the tag key for typos or invalid names."
-        return 1
-    fi
-
-    TAG_VALUE_NAME=$(gcloud resource-manager tags values list \
-        --parent="${TAG_KEY_NAME}" \
-        --filter="shortName=${TAG_VALUE}" \
-        --format="value(name)")
-
-    if [[ -z "${TAG_VALUE_NAME}" ]]; then
-        echo "ERROR: Could not find tag value '${TAG_VALUE}' under tag key '${TAG_KEY}' in project '${PROJECT_ID}'. Please check the tag value for typos or invalid names."
-        return 1
-    fi
-
-    echo "Using tag value: ${TAG_VALUE_NAME}"
-
-    # Find VMs with the specified tag
-    echo "Finding VMs with tag ${TAG_VALUE_NAME} in project ${PROJECT_ID}..."
+    echo "Finding VMs in region ${LOCATION} for project ${PROJECT_ID}..."
     matching_vms=()
 
-    # List all VMs
-    vm_list=$(gcloud compute instances list \
-        --project="${PROJECT_ID}" \
-        --format="csv[no-heading](name,zone)")
-
-    while IFS=, read -r vm_name vm_zone; do
+    # List VMs in all zones with a simpler format
+    while IFS=, read -r vm_name vm_zone vm_status; do
         if [[ -n "$vm_name" ]]; then
-            # For protection, check region
-            if [ "$UNPROTECT" != true ]; then
-                # Check if VM is in the same region as the backup plan
-                vm_region=$(get_region_from_zone "$vm_zone")
-                if [[ "$vm_region" != "$LOCATION" ]]; then
-                    echo "Skipping VM $vm_name: located in $vm_region, backup plan is in $LOCATION"
-                    continue
+            # Extract region from zone
+            vm_region=$(echo "$vm_zone" | cut -d'-' -f1-2)
+            
+            echo "Checking VM: $vm_name in zone $vm_zone (region: $vm_region, status: $vm_status)"
+            
+            if [[ "$vm_region" == "$LOCATION" ]]; then
+                echo "Found VM in correct region: $vm_name in $vm_zone"
+                # Only include running VMs
+                if [[ "$vm_status" == "RUNNING" ]]; then
+                    echo "VM is running, adding to processing list"
+                    matching_vms+=("$vm_name,$vm_zone")
+                else
+                    echo "Skipping VM: $vm_name (status: $vm_status)"
                 fi
-            fi
-
-            echo "Checking tags for VM: $vm_name"
-            resource_name="//compute.googleapis.com/projects/${PROJECT_ID}/zones/${vm_zone}/instances/${vm_name}"
-
-            # Check if this VM has our target tag using 'grep' for exact match
-            if gcloud resource-manager tags bindings list \
-                --parent="${resource_name}" \
-                --location="${vm_zone}" \
-                --format="value(tagValue)" | grep -q "^${TAG_VALUE_NAME}$"; then
-                echo "Found matching VM: $vm_name"
-                matching_vms+=("$vm_name,$vm_zone")
+            else
+                echo "Skipping VM: $vm_name (not in region $LOCATION)"
             fi
         fi
-    done <<< "$vm_list"
+    done < <(gcloud compute instances list \
+        --project="${PROJECT_ID}" \
+        --format="csv[no-heading](name,zone,status)")
 
     if [ ${#matching_vms[@]} -eq 0 ]; then
         if [ "$UNPROTECT" != true ]; then
-            echo "No VMs found with tag ${TAG_VALUE_NAME} in region ${LOCATION} for project ${PROJECT_ID}"
+            echo "No running VMs found in region ${LOCATION} for project ${PROJECT_ID}"
         else
-            echo "No VMs found with tag ${TAG_VALUE_NAME} in project ${PROJECT_ID}"
+            echo "No running VMs found in project ${PROJECT_ID}"
         fi
         return 1
     else
         if [ "$UNPROTECT" != true ]; then
-            echo "Found ${#matching_vms[@]} VMs with matching tag in region ${LOCATION} in project ${PROJECT_ID}"
+            echo "Found ${#matching_vms[@]} running VMs in region ${LOCATION} in project ${PROJECT_ID}"
         else
-            echo "Found ${#matching_vms[@]} VMs with matching tag in project ${PROJECT_ID}"
+            echo "Found ${#matching_vms[@]} running VMs in project ${PROJECT_ID}"
         fi
 
         # Process each matching VM
@@ -502,7 +471,7 @@ process_project() {
                 echo "✓ Successfully processed VM: ${vm_name}"
             else
                 echo "✗ Failed to process VM: ${vm_name}"
-                SCRIPT_SUCCESS=false  # Set script success flag to false if any VM processing fails
+                SCRIPT_SUCCESS=false
             fi
         done
     fi
