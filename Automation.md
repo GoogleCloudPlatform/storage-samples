@@ -80,7 +80,7 @@ gcloud services enable \
 gcloud config get-value project
 
 # If needed, set the correct project
-gcloud config set project prod-demo-vault
+gcloud config set project YOUR-PROJECT-NAME
 ```
 
 ### 2\. Create Working Directory and Files {#2.-create-working-directory-and-files}
@@ -196,7 +196,8 @@ chmod +x backup_script.sh
 
 ### 3\. Set Up Container Registry {#3.-set-up-container-registry}
 
-1. Create Artifact Registry repository:
+1. Create Artifact Registry repository.   
+   - Make sure you update the location to be the location of your Backup Plan you intend to use. 
 
 ```
 gcloud artifacts repositories create backup-scripts \
@@ -212,14 +213,18 @@ gcloud artifacts repositories create backup-scripts \
 docker build -t backup-script:latest .
 ```
 
-3. Tag for Artifact Registry. Update the project name to be your current project where backups reside. 
+3. Tag for Artifact Registry. Update the project name to be your current project where backups reside.   
+   - Update the *us-central1* to be the same as your desired region   
+   - Update YOUR-PROJECT-NAME to be your project where VMs exist.
 
 ```
 # Tag for Artifact Registry 
 docker tag backup-script:latest us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/backup-scripts/backup-script:latest 
 ```
 
-4. Push to Artifact Registry.  Update the project name to be your current project where backups reside. 
+4. Push to Artifact Registry.  Update the project name to be your current project where backups reside.   
+   - Update *us-central1* to be the same as your desired region  
+   - Update YOUR-PROJECT-NAME to be your project where VMs exist.
 
 ```
 # Push to Artifact Registry 
@@ -236,7 +241,8 @@ gcloud iam service-accounts create backup-script-sa \
     --display-name="Backup Script Service Account"
 ```
 
-2. Grant permissions on the backup project where your backup plan and backup vaults reside (YOUR-PROJECT-NAME):
+2. Grant permissions on the backup project where your backup plan and backup vaults reside (YOUR-PROJECT-NAME):  
+   - Update the below to use your project name where your backup plan resides.
 
 ```
 # Base permissions
@@ -314,7 +320,9 @@ gcloud alpha backup-dr backup-plans list \
 
 ### 6\. Create Cloud Run Job {#6.-create-cloud-run-job}
 
-1. Create the Cloud Run job. Be sure to update YOUR-PROJECT-NAME with your project.  
+1. Create the Cloud Run job.   
+   - Be sure to update YOUR-PROJECT-NAME with your project.  
+   - Be sure to also update the values of the location, backup plan name, tag key, tag value, and target project where your VMs reside.   
    - If you want to make changes after creation, you can modify through editing the YAML in the Cloud run Jobs YAML tab. 
 
 ```
@@ -345,11 +353,11 @@ gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
 ```
 
 2. Create scheduler job:  
-   The schedule `0 0 * * *` runs the job in UTC daily at midnight. You can modify this using [standard cron syntax](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules).
+   The schedule `0 */3 * * *` runs the job in UTC every 3 hours. You can modify this using [standard cron syntax](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules). Alternatively,  `0 0 * * *` runs the job in UTC at midnight. 
 
 ```
 gcloud scheduler jobs create http backup-script-scheduler \
-    --schedule="0 0 * * *" \
+    --schedule="0 */3 * * *" \
     --location=us-central1 \
     --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/YOUR-PROJECT-NAME/jobs/backup-script-job:run" \
     --http-method=POST \
@@ -359,7 +367,7 @@ gcloud scheduler jobs create http backup-script-scheduler \
 ### 8\. Testing {#8.-testing}
 
 1. Execute the job manually:  
-   You may be asked to pick a region. This must be the same region as your backup plan.
+   \- You may be asked to pick a region. This must be the same region as your backup plan.
 
 ```
 gcloud run jobs execute backup-script-job
@@ -407,7 +415,7 @@ gcloud scheduler jobs list
      
    - Verify all IAM roles are correctly assigned  
    - Check both projects have the necessary permissions  
-   - Ensure service account exists and is properly configured
+   - Ensure service account exists and is properly configured with the required Roles
 
    
 
@@ -415,6 +423,7 @@ gcloud scheduler jobs list
      
    - Verify the backup plan exists using the list command  
    - Check the full backup plan name format  
+   - Ensure you are using the correct location of the backup plan  
    - Ensure you're in the correct project
 
    
@@ -443,7 +452,6 @@ gcloud scheduler jobs update http backup-script-scheduler \
 
 ## Important Notes {#important-notes}
 
-- All commands assume you're in the test-docker directory  
 - Replace project IDs if different from examples  
 - The scheduler uses UTC timezone  
 - Job timeout is set to 1 hour (3600s)  
@@ -454,7 +462,6 @@ gcloud scheduler jobs update http backup-script-scheduler \
 
 1. Regularly monitor job execution logs  
 2. Keep track of successful/failed backups  
-3. Test the backup restoration process  
-4. Maintain documentation of any custom modifications  
-5. Regularly review and update permissions as needed
+3. Maintain documentation of any custom modifications  
+4. Regularly review and update permissions as needed
 
