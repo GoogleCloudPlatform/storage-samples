@@ -14,7 +14,7 @@ Check out some of the samples found on in folders of this repository. Samples in
 
 1. Enable the Backup and DR Service API in your GCP Project. 
 
-1. Clone this repository:
+1. Clone this repository.
 
 
 ## Contributing
