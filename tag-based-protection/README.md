@@ -114,4 +114,4 @@ This command will automatically remove any backup plan association from VMs with
 After setting up the above, view the following files to learn how to further enhance your protection:
 
 - **[Automation.md](Automation.md)**: Read how to set up a Cloud Run Job in Google Cloud Platform to set up your script to run on an hourly, daily, weekly or monthly basis.   
-- **[Backup_Protect_Report_UserGuide.md](Backup_Protected_Report_UserGuide.md)**: Read how to export a .txt file that shows you the overall protection summary for your Project or Folder. 
+- **[Backup_Protect_Report_UserGuide.md](Backup_Protect_Report_UserGuide.md)**: Read how to export a .txt file that shows you the overall protection summary for your Project or Folder. 
