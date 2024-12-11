@@ -64,7 +64,7 @@ Follow the below steps to apply your protection:
      
 3. Run your file by providing the following required **parameters**:  
      
-   1. `--unprotect:`(Optional) Use this flag and skip (ii) \- (iv) if you intent to only remove active backup plans associated with VMs with certain tags.  
+   1. `--unprotect:`(Optional) Use this flag and skip (ii) \- (iv) if you intend to only remove active backup plans associated with VMs with certain tags.  
    2. `--backup-project-id`: The project ID where the backup plan is located.  
    3. `--location`: The region where the backup plan is located (e.g., `us-central1`).  
    4. `--backup-plan`: The name of your backup plan.  
