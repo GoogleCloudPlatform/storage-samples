@@ -1,54 +1,35 @@
-# Automated GCP VM Backup Management {#automated-gcp-vm-backup-management}
+# Automated GCP VM Backup Management
 
-[Ashika Ganesh](mailto:ashikag@google.com) | Last Updated: Nov 26, 2024
+Ashika Ganesh| Last Updated: Dec 11, 2024
 
-[Automated GCP VM Backup Management](#automated-gcp-vm-backup-management)
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Detailed Implementation Steps](#detailed-implementation-steps)
+  - [1. Initial Setup in Cloud Shell](#1-initial-setup-in-cloud-shell)
+  - [2. Create Working Directory and Files](#2-create-working-directory-and-files)
+  - [3. Set Up Container Registry](#3-set-up-container-registry)
+  - [4. Create and Configure Service Account](#4-create-and-configure-service-account)
+  - [5. Verify Backup Plan](#5-verify-backup-plan)
+  - [6. Create Cloud Run Job](#6-create-cloud-run-job)
+  - [7. Set Up Cloud Scheduler](#7-set-up-cloud-scheduler)
+  - [8. Testing](#8-testing)
+  - [9. Monitoring and Troubleshooting](#9-monitoring-and-troubleshooting)
+    - [View Job History](#view-job-history)
+    - [Check Scheduler Job Status](#check-scheduler-job-status)
+    - [Common Issues and Solutions](#common-issues-and-solutions)
+  - [10. Maintenance Tasks](#10-maintenance-tasks)
+    - [Update Job Configuration](#update-job-configuration)
+    - [Update Schedule](#update-schedule)
+- [Important Notes](#important-notes)
+- [Best Practices](#best-practices)
 
-[Overview](#overview)
-
-[Prerequisites](#prerequisites)
-
-[Detailed Implementation Steps](#detailed-implementation-steps)
-
-[1\. Initial Setup in Cloud Shell](#1.-initial-setup-in-cloud-shell)
-
-[2\. Create Working Directory and Files](#2.-create-working-directory-and-files)
-
-[3\. Set Up Container Registry](#3.-set-up-container-registry)
-
-[4\. Create and Configure Service Account](#4.-create-and-configure-service-account)
-
-[5\. Verify Backup Plan](#5.-verify-backup-plan)
-
-[6\. Create Cloud Run Job](#6.-create-cloud-run-job)
-
-[7\. Set Up Cloud Scheduler](#7.-set-up-cloud-scheduler)
-
-[8\. Testing](#8.-testing)
-
-[9\. Monitoring and Troubleshooting](#9.-monitoring-and-troubleshooting)
-
-[View Job History](#view-job-history)
-
-[Check Scheduler Job Status](#check-scheduler-job-status)
-
-[Common Issues and Solutions](#common-issues-and-solutions)
-
-[10\. Maintenance Tasks](#10.-maintenance-tasks)
-
-[Update Job Configuration](#update-job-configuration)
-
-[Update Schedule](#update-schedule)
-
-[Important Notes](#important-notes)
-
-[Best Practices](#best-practices)
-
-## Overview {#overview}
+## Overview
 
 This guide provides detailed, step-by-step instructions for implementing an automated backup management system in Google Cloud Platform (GCP). This solution automates VM backup management using Cloud Run Jobs, Cloud Scheduler, and custom scripts.
 
-## Prerequisites {#prerequisites}
+
+## Prerequisites
 
 1. Access to Google Cloud Console  
 2. Required GCP Projects:  
@@ -66,9 +47,9 @@ gcloud services enable \
     backupdr.googleapis.com
 ```
 
-## Detailed Implementation Steps {#detailed-implementation-steps}
+## Detailed Implementation Steps
 
-### 1\. Initial Setup in Cloud Shell {#1.-initial-setup-in-cloud-shell}
+### 1\. Initial Setup in Cloud Shell
 
 1. Open Google Cloud Console ([https://console.cloud.google.com](https://console.cloud.google.com))  
 2. Click the "Activate Cloud Shell" button (\>\_ icon) at the top right  
@@ -83,7 +64,7 @@ gcloud config get-value project
 gcloud config set project YOUR-PROJECT-NAME
 ```
 
-### 2\. Create Working Directory and Files {#2.-create-working-directory-and-files}
+### 2\. Create Working Directory and Files
 
 1. Create and navigate to working directory:
 
@@ -194,7 +175,7 @@ images:
 chmod +x backup_script.sh
 ```
 
-### 3\. Set Up Container Registry {#3.-set-up-container-registry}
+### 3\. Set Up Container Registry
 
 1. Create Artifact Registry repository.   
    - Make sure you update the location to be the location of your Backup Plan you intend to use. 
@@ -231,7 +212,7 @@ docker tag backup-script:latest us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/bac
 docker push us-central1-docker.pkg.dev/YOUR-PROJECT-NAME/backup-scripts/backup-script:latest
 ```
 
-### 4\. Create and Configure Service Account {#4.-create-and-configure-service-account}
+### 4\. Create and Configure Service Account
 
 1. Create the service account:
 
@@ -304,7 +285,7 @@ gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
     --condition=None
 ```
 
-### 5\. Verify Backup Plan {#5.-verify-backup-plan}
+### 5\. Verify Backup Plan
 
 1. List existing backup plans to get the exact name:
 
@@ -318,7 +299,7 @@ gcloud alpha backup-dr backup-plans list \
 2. Note the full backup plan name from the output.  
    - it should look like: "projects/prod-demo-vault/locations/us-central1/backupPlans/bp-bronze"
 
-### 6\. Create Cloud Run Job {#6.-create-cloud-run-job}
+### 6\. Create Cloud Run Job
 
 1. Create the Cloud Run job.   
    - Be sure to update YOUR-PROJECT-NAME with your project.  
@@ -341,7 +322,7 @@ gcloud run jobs create backup-script-job \
 
 ```
 
-### 7\. Set Up Cloud Scheduler {#7.-set-up-cloud-scheduler}
+### 7\. Set Up Cloud Scheduler
 
 1. Grant additional permissions for scheduler:
 
@@ -364,7 +345,7 @@ gcloud scheduler jobs create http backup-script-scheduler \
     --oauth-service-account-email=backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com
 ```
 
-### 8\. Testing {#8.-testing}
+### 8\. Testing
 
 1. Execute the job manually:  
    \- You may be asked to pick a region. This must be the same region as your backup plan.
@@ -395,21 +376,21 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=ba
 ```
 ````
 
-### 9\. Monitoring and Troubleshooting {#9.-monitoring-and-troubleshooting}
+### 9\. Monitoring and Troubleshooting
 
-#### View Job History {#view-job-history}
+#### View Job History
 
 ```
 gcloud run jobs executions list --job backup-script-job
 ```
 
-#### Check Scheduler Job Status {#check-scheduler-job-status}
+#### Check Scheduler Job Status
 
 ```
 gcloud scheduler jobs list
 ```
 
-#### Common Issues and Solutions {#common-issues-and-solutions}
+#### Common Issues and Solutions
 
 1. **Permission Denied Errors**  
      
@@ -434,23 +415,23 @@ gcloud scheduler jobs list
    - Check if all required APIs are enabled  
    - Ensure service account has proper project access
 
-### 10\. Maintenance Tasks {#10.-maintenance-tasks}
+### 10\. Maintenance Tasks
 
-#### Update Job Configuration {#update-job-configuration}
+#### Update Job Configuration
 
 ```
 gcloud run jobs update backup-script-job \
     [include any parameters you want to change]
 ```
 
-#### Update Schedule {#update-schedule}
+#### Update Schedule
 
 ```
 gcloud scheduler jobs update http backup-script-scheduler \
     --schedule="NEW_SCHEDULE"
 ```
 
-## Important Notes {#important-notes}
+## Important Notes
 
 - Replace project IDs if different from examples  
 - The scheduler uses UTC timezone  
@@ -458,7 +439,7 @@ gcloud scheduler jobs update http backup-script-scheduler \
 - Job will retry up to 3 times on failure  
 - All permissions are set without conditions for simplicity
 
-## Best Practices {#best-practices}
+## Best Practices
 
 1. Regularly monitor job execution logs  
 2. Keep track of successful/failed backups  
