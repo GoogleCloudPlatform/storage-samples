@@ -1,6 +1,6 @@
 # Tag Based Protection using gCloud for Vaulted Backups {#tag-based-protection-using-gcloud-for-vaulted-backups}
 
-[Ashika Ganesh](mailto:ashikag@google.com) | Last Updated: Nov 26, 2024
+Ashika Ganesh | Last Updated: Dec 11, 2024
 
 [Tag Based Protection using gCloud for Vaulted Backups](#tag-based-protection-using-gcloud-for-vaulted-backups)
 
