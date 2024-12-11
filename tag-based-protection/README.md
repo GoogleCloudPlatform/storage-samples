@@ -35,7 +35,7 @@ This guide will enable you to:
 2. Both projects have the necessary APIs enabled  
 3. The user running the script has the [required permissions in both projects](https://cloud.google.com/backup-disaster-recovery/docs/cloud-console/compute/compute-instance-backup#backup-user)
 
-## Getting Started {#getting-started}
+## Getting Started
 
 Follow the below steps to apply your protection:
 
