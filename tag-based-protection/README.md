@@ -1,16 +1,12 @@
-# Tag Based Protection using gCloud for Vaulted Backups {#tag-based-protection-using-gcloud-for-vaulted-backups}
+# Tag Based Protection using gCloud for Vaulted Backups
 
 Ashika Ganesh | Last Updated: Dec 11, 2024
 
-[Tag Based Protection using gCloud for Vaulted Backups](#tag-based-protection-using-gcloud-for-vaulted-backups)
+- [Overview](#overview)
+- [Set up and Permissions](#set-up-and-permissions)
+- [Getting Started](#getting-started)
 
-[Overview](#overview)
-
-[Set up and Permissions](#set-up-and-permissions)
-
-[Getting Started](#getting-started)
-
-## Overview {#overview}
+## Overview
 
 This document provides a way to manage backups for your Google Compute Engine Virtual Machines (VMs) using tags. By leveraging the provided script and Google Cloud Shell, you can automate the association and removal of backup plans based on VM tags, simplifying backup management and ensuring consistent protection for your dynamic cloud environments. Note that this script only works for project level tags that are assigned to VMs including inherited tags. 
 
@@ -20,7 +16,13 @@ This guide will enable you to:
 * **Simplify backup management:** Control backup policies for large numbers of VMs efficiently by grouping them with tags representing application names, environments (production, development, testing), or criticality levels.  
 * **Enhance protection:** Ensure that your critical VMs are always protected by dynamically associating them with backup plans based on their tags.
 
-## Set up and Permissions {#set-up-and-permissions}
+## Set up and Permissions
+
+**You will need to obtain the following Role on the Project where your VMs exist with tags:**
+
+- [Tag Viewer](https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing#required-permissions)  
+- [Backup and DR Backup User](https://cloud.google.com/iam/docs/understanding-roles#backupdr.backupUser)
+
 
 **You will need to obtain the following Role on the Project where your VMs exist with tags:**
 
