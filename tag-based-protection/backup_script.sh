@@ -434,13 +434,9 @@ process_project() {
             
             if [[ "$vm_region" == "$LOCATION" ]]; then
                 echo "Found VM in correct region: $vm_name in $vm_zone"
-                # Only include running VMs
-                if [[ "$vm_status" == "RUNNING" ]]; then
-                    echo "VM is running, adding to processing list"
-                    matching_vms+=("$vm_name,$vm_zone")
-                else
-                    echo "Skipping VM: $vm_name (status: $vm_status)"
-                fi
+                # Include all VMs regardless of status
+                echo "Adding VM to processing list (status: $vm_status)"
+                matching_vms+=("$vm_name,$vm_zone")
             else
                 echo "Skipping VM: $vm_name (not in region $LOCATION)"
             fi
@@ -451,16 +447,16 @@ process_project() {
 
     if [ ${#matching_vms[@]} -eq 0 ]; then
         if [ "$UNPROTECT" != true ]; then
-            echo "No running VMs found in region ${LOCATION} for project ${PROJECT_ID}"
+            echo "No VMs found in region ${LOCATION} for project ${PROJECT_ID}"
         else
-            echo "No running VMs found in project ${PROJECT_ID}"
+            echo "No VMs found in project ${PROJECT_ID}"
         fi
         return 1
     else
         if [ "$UNPROTECT" != true ]; then
-            echo "Found ${#matching_vms[@]} running VMs in region ${LOCATION} in project ${PROJECT_ID}"
+            echo "Found ${#matching_vms[@]} VMs in region ${LOCATION} in project ${PROJECT_ID}"
         else
-            echo "Found ${#matching_vms[@]} running VMs in project ${PROJECT_ID}"
+            echo "Found ${#matching_vms[@]} VMs in project ${PROJECT_ID}"
         fi
 
         # Process each matching VM
