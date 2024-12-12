@@ -23,6 +23,7 @@
 # - Process VMs in specified regions only
 
 # Initialize script success flag
+#Last Updated: 12/12/2024
 SCRIPT_SUCCESS=true
 
 
@@ -473,7 +474,6 @@ process_project() {
             if gcloud resource-manager tags bindings list \
                 --parent="${resource_name}" \
                 --location="${vm_zone}" \
-                # --effective \ # Include this flag to list inherited tags
                 --format="value(tagValue)" | grep -q "^${TAG_VALUE_NAME}$"; then
                 echo "Found matching VM: $vm_name"
                 matching_vms+=("$vm_name,$vm_zone")
