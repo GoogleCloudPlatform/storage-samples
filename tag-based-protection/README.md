@@ -8,7 +8,7 @@ Ashika Ganesh | Last Updated: Dec 11, 2024
 
 ## Overview
 
-This document provides a way to manage backups for your Google Compute Engine Virtual Machines (VMs) using tags. By leveraging the provided script and Google Cloud Shell, you can automate the association and removal of backup plans based on VM tags, simplifying backup management and ensuring consistent protection for your dynamic cloud environments. Note that this script only works for project level tags that are assigned to VMs including inherited tags. 
+This document provides a way to manage backups for your Google Compute Engine Virtual Machines (VMs) using tags. By leveraging the provided script and Google Cloud Shell, you can automate the association and removal of backup plans based on VM tags, simplifying backup management and ensuring consistent protection for your dynamic cloud environments. Note that this script only works for project level tags that are assigned to VMs. We are currently working on including support for inherited tags. 
 
 This guide will enable you to:
 
@@ -104,7 +104,7 @@ This command will automatically associate backup plan `bp-bronze` to VMs in `pro
 
 ```
 bash ./"backup_script.sh" \
--- unprotect
+--unprotect
 --tag-key environment \
 --tag-value test \
 --projects project1

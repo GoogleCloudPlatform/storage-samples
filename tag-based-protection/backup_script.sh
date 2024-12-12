@@ -473,6 +473,7 @@ process_project() {
             if gcloud resource-manager tags bindings list \
                 --parent="${resource_name}" \
                 --location="${vm_zone}" \
+                # --effective \ # Include this flag to list inherited tags
                 --format="value(tagValue)" | grep -q "^${TAG_VALUE_NAME}$"; then
                 echo "Found matching VM: $vm_name"
                 matching_vms+=("$vm_name,$vm_zone")
