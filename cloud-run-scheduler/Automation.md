@@ -245,13 +245,9 @@ gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
 # Additional required permissions (added based on troubleshooting)
 gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
     --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
-    --role="roles/backupdr.computeEngineBackupAdmin" \
+    --role="roles/backupdr.computeEngineOperator" \
     --condition=None
 
-gcloud projects add-iam-policy-binding YOUR-PROJECT-NAME \
-    --member="serviceAccount:backup-script-sa@YOUR-PROJECT-NAME.iam.gserviceaccount.com" \
-    --role="roles/compute.instanceAdmin.v1" \
-    --condition=None
 ```
 
 3. Grant permissions on target project (TARGET-PROJECT-NAME):
@@ -276,12 +272,7 @@ gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
 # Additional required permissions (added based on troubleshooting)
 gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
     --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
-    --role="roles/backupdr.computeEngineBackupAdmin" \
-    --condition=None
-
-gcloud projects add-iam-policy-binding TARGET-PROJECT-NAME \
-    --member="serviceAccount:backup-script-sa@TARGET-PROJECT-NAME.iam.gserviceaccount.com" \
-    --role="roles/compute.instanceAdmin.v1" \
+    --role="roles/backupdr.computeEngineOperator" \
     --condition=None
 ```
 
