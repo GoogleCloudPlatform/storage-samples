@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script to manage backup plan associations for VMs based on tags across multiple projects and folders.
+# Script to manage backup plan associations for VMs based on direct and inherited tags across multiple projects and folders.
 # This script provides functionality to:
-# - Associate VMs with backup plans based on resource tags
+# - Associate VMs with backup plans based on direct and inherited resource tags
 # - Support multiple projects and folders
 # - Handle unprotection (removal) of backup associations
 # - Verify project and backup plan existence
@@ -25,7 +25,6 @@
 # Initialize script success flag
 #Last Updated: 12/12/2024
 SCRIPT_SUCCESS=true
-
 
 echo "Starting backup plan management script..."
 
@@ -163,6 +162,57 @@ get_region_from_zone() {
     echo "${zone%-*}"
 }
 
+# Function to check VM tags (updated to use resource-manager tags bindings)
+check_vm_tags() {
+    local PROJECT_ID="$1"
+    local vm_name="$2"
+    local vm_zone="$3"
+    local vm_id="$4"
+    
+    echo "Checking tags for VM: $vm_name"
+    local resource_name="//compute.googleapis.com/projects/${PROJECT_ID}/zones/${vm_zone}/instances/${vm_name}"
+    
+    # Get both direct and inherited tags using resource-manager
+    local tag_bindings
+    tag_bindings=$(gcloud resource-manager tags bindings list \
+        --parent="${resource_name}" \
+        --location="${vm_zone}" \
+        --effective)
+    
+    if [[ -z "$tag_bindings" ]]; then
+        echo "No tags found for VM $vm_name"
+        return 1
+    fi
+
+    # Convert YAML to JSON for proper parsing
+    tag_bindings_json=$(echo "$tag_bindings" | python3 -c 'import sys, yaml, json; print(json.dumps([doc for doc in yaml.safe_load_all(sys.stdin)]))')
+    
+    # Check for matching tag key and value
+    local match
+    match=$(echo "$tag_bindings_json" | jq -r --arg key "$TAG_KEY" --arg val "$TAG_VALUE" '
+        .[] | 
+        select(
+            (.namespacedTagKey | split("/")[-1] == $key) and
+            (.namespacedTagValue | split("/")[-1] == $val)
+        )'
+    )
+    
+    if [[ -n "$match" ]]; then
+        # Check if tag is inherited
+        local is_inherited
+        is_inherited=$(echo "$match" | jq -r '.inherited // false')
+        if [[ "$is_inherited" == "true" ]]; then
+            echo "Found matching inherited tag ${TAG_KEY}:${TAG_VALUE} on VM $vm_name"
+        else
+            echo "Found matching direct tag ${TAG_KEY}:${TAG_VALUE} on VM $vm_name"
+        fi
+        return 0
+    fi
+    
+    echo "No matching tag found for VM $vm_name"
+    return 1
+}
+
 # Function to check if an association already exists for the VM
 check_association_exists() {
     local PROJECT_ID="$1"
@@ -280,7 +330,6 @@ process_vm() {
     local PROJECT_ID="$1"
     local vm_name="$2"
     local vm_zone="$3"
-
     echo "Processing VM: ${vm_name} in zone ${vm_zone} of project ${PROJECT_ID}"
 
     # Get VM ID
@@ -297,117 +346,95 @@ process_vm() {
 
     echo "VM ID: $vm_id"
 
-    if check_association_exists "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
-        echo "Found existing association for VM $vm_name"
+    # Check for direct and inherited tags
+    if check_vm_tags "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
+        if check_association_exists "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
+            echo "Found existing association for VM $vm_name"
 
-        if [ "$UNPROTECT" = true ]; then
-            # Unprotect: delete the association(s)
-            echo "Unprotect flag is set. Deleting backup plan associations for VM $vm_name."
-
-            # Get all associations for the VM
-            associations=$(gcloud alpha backup-dr backup-plan-associations list \
-                --project="${PROJECT_ID}" \
-                --format="json" | \
-                jq -c --arg vmid "$vm_id" '.[] | select(.resource | contains($vmid))')
-
-            if [[ -z "$associations" ]]; then
-                echo "No backup plan associations found for VM $vm_name. Skipping..."
-                return 0
-            fi
-
-            # Read associations into an array
-            associations_array=()
-            while IFS= read -r line; do
-                associations_array+=("$line")
-            done <<< "$associations"
-
-            # Delete each association
-            local success=true
-            for association in "${associations_array[@]}"; do
-                association_name=$(echo "$association" | jq -r '.name')
-                association_location=$(echo "$association" | jq -r '.location')
-                echo "Deleting association $association_name in location $association_location"
-
-                if ! gcloud alpha backup-dr backup-plan-associations delete "${association_name}" \
+            if [ "$UNPROTECT" = true ]; then
+                # Get all associations for the VM
+                associations=$(gcloud alpha backup-dr backup-plan-associations list \
                     --project="${PROJECT_ID}" \
-                    --location="${association_location}" \
-                    --quiet; then
-                    echo "Failed to delete backup plan association $association_name"
-                    success=false
-                    continue
+                    --format="json" | \
+                    jq -c --arg vmid "$vm_id" '.[] | select(.resource | contains($vmid))')
+
+                if [[ -z "$associations" ]]; then
+                    echo "No backup plan associations found for VM $vm_name. Skipping..."
+                    return 0
                 fi
 
-                # Wait for deletion to complete
-                echo "Waiting for deletion of $association_name to complete..."
-                for ((i=1; i<=60; i++)); do
-                    if ! gcloud alpha backup-dr backup-plan-associations describe "${association_name}" \
-                        --project="${PROJECT_ID}" \
-                        --location="${association_location}" &>/dev/null; then
-                        echo "Association $association_name successfully deleted"
-                        break
-                    fi
-                    echo "Waiting... $i seconds"
-                    sleep 1
+                # Read associations into an array
+                associations_array=()
+                while IFS= read -r line; do
+                    associations_array+=("$line")
+                done <<< "$associations"
 
-                    if ((i == 60)); then
-                        echo "Timeout waiting for deletion of $association_name"
+                # Delete each association
+                local success=true
+                for association in "${associations_array[@]}"; do
+                    association_name=$(echo "$association" | jq -r '.name')
+                    association_location=$(echo "$association" | jq -r '.location')
+                    echo "Deleting association $association_name in location $association_location"
+
+                    if ! delete_association "${PROJECT_ID}" "${association_name}" "${association_location}"; then
+                        echo "Failed to delete backup plan association $association_name"
                         success=false
-                        break
+                        continue
                     fi
                 done
-            done
 
-            if [ "$success" = false ]; then
-                return 1
-            else
+                if [ "$success" = false ]; then
+                    return 1
+                fi
                 echo "Successfully deleted all backup plan associations for VM $vm_name."
                 return 0
+            else
+                # Check if associated with correct backup plan
+                local current_backup_plan
+                current_backup_plan=$(get_associated_backup_plan "$PROJECT_ID" "$vm_id")
+                echo "Current backup plan: $current_backup_plan"
+
+                # Extract the project number from the current_backup_plan
+                local project_number=$(echo "$current_backup_plan" | cut -d/ -f2)
+                # Compare the current backup plan with the desired backup plan
+                local expected_backup_plan="projects/${project_number}/locations/${LOCATION}/backupPlans/${BACKUP_PLAN}"
+                echo "Expected backup plan: $expected_backup_plan"
+
+                if [[ "$current_backup_plan" == "$expected_backup_plan" ]]; then
+                    echo "VM $vm_name is already associated with the correct backup plan. Skipping..."
+                    return 0
+                else
+                    echo "VM $vm_name is associated with a different backup plan. Updating..."
+                    # Delete the existing association
+                    if ! delete_association "$PROJECT_ID" "${vm_name}-backup-association" "${LOCATION}"; then
+                        echo "ERROR: Failed to delete existing backup plan association for VM $vm_name."
+                        return 1
+                    fi
+                    # Create a new association with the correct backup plan
+                    if ! create_association "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
+                        echo "ERROR: Failed to create new backup plan association for VM $vm_name."
+                        return 1
+                    fi
+                fi
             fi
         else
-            # Protect: check if associated with correct backup plan
-            local current_backup_plan
-            current_backup_plan=$(get_associated_backup_plan "$PROJECT_ID" "$vm_id")
-            echo "Current backup plan: $current_backup_plan"
+            echo "No existing association found."
 
-            # Extract the project number from the current_backup_plan
-            local project_number=$(echo "$current_backup_plan" | cut -d/ -f2)
-            # Compare the current backup plan with the desired backup plan
-            local expected_backup_plan="projects/${project_number}/locations/${LOCATION}/backupPlans/${BACKUP_PLAN}"
-            echo "Expected backup plan: $expected_backup_plan"
-
-            if [[ "$current_backup_plan" == "$expected_backup_plan" ]]; then
-                echo "VM $vm_name is already associated with the correct backup plan. Skipping..."
+            if [ "$UNPROTECT" = true ]; then
+                echo "Unprotect flag is set, but no association exists for VM $vm_name. Skipping..."
                 return 0
             else
-                echo "VM $vm_name is associated with a different backup plan. Updating..."
-                # Delete the existing association
-                if ! delete_association "$PROJECT_ID" "${vm_name}-backup-association" "${LOCATION}"; then
-                    echo "ERROR: Failed to delete existing backup plan association for VM $vm_name."
-                    return 1
-                fi
-                # Create a new association with the correct backup plan
+                echo "Creating backup plan association for VM $vm_name."
                 if ! create_association "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
-                    echo "ERROR: Failed to create new backup plan association for VM $vm_name."
+                    echo "ERROR: Failed to create backup plan association for VM $vm_name."
                     return 1
                 fi
-                return 0
             fi
         fi
     else
-        echo "No existing association found."
-
-        if [ "$UNPROTECT" = true ]; then
-            echo "Unprotect flag is set, but no association exists for VM $vm_name. Skipping..."
-            return 0
-        else
-            echo "Creating backup plan association for VM $vm_name."
-            if ! create_association "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
-                echo "ERROR: Failed to create backup plan association for VM $vm_name."
-                return 1
-            fi
-            return 0
-        fi
+        echo "VM $vm_name does not have the required tag (either direct or inherited). Will not protect..."
     fi
+    return 0
 }
 
 # Function to process a single project
@@ -422,32 +449,7 @@ process_project() {
         return 1
     fi
 
-    # Get the full tag key name and value name
-    echo "Getting tag details for project ${PROJECT_ID}..."
-    TAG_KEY_NAME=$(gcloud resource-manager tags keys list \
-        --parent="projects/${PROJECT_ID}" \
-        --filter="shortName=${TAG_KEY}" \
-        --format="value(name)")
-
-    if [[ -z "${TAG_KEY_NAME}" ]]; then
-        echo "ERROR: Could not find tag key '${TAG_KEY}' in project '${PROJECT_ID}'. Please check the tag key for typos or invalid names."
-        return 1
-    fi
-
-    TAG_VALUE_NAME=$(gcloud resource-manager tags values list \
-        --parent="${TAG_KEY_NAME}" \
-        --filter="shortName=${TAG_VALUE}" \
-        --format="value(name)")
-
-    if [[ -z "${TAG_VALUE_NAME}" ]]; then
-        echo "ERROR: Could not find tag value '${TAG_VALUE}' under tag key '${TAG_KEY}' in project '${PROJECT_ID}'. Please check the tag value for typos or invalid names."
-        return 1
-    fi
-
-    echo "Using tag value: ${TAG_VALUE_NAME}"
-
-    # Find VMs with the specified tag
-    echo "Finding VMs with tag ${TAG_VALUE_NAME} in project ${PROJECT_ID}..."
+    echo "Finding VMs with tag ${TAG_KEY}:${TAG_VALUE} (including inherited tags) in project ${PROJECT_ID}..."
     matching_vms=()
 
     # List all VMs
@@ -466,52 +468,23 @@ process_project() {
                     continue
                 fi
             fi
+            echo "========================================================================"
 
-            echo "Checking tags for VM: $vm_name"
-            resource_name="//compute.googleapis.com/projects/${PROJECT_ID}/zones/${vm_zone}/instances/${vm_name}"
-
-            # Check if this VM has our target tag using 'grep' for exact match
-            if gcloud resource-manager tags bindings list \
-                --parent="${resource_name}" \
-                --location="${vm_zone}" \
-                --format="value(tagValue)" | grep -q "^${TAG_VALUE_NAME}$"; then
-                echo "Found matching VM: $vm_name"
-                matching_vms+=("$vm_name,$vm_zone")
-            fi
-        fi
-    done <<< "$vm_list"
-
-    if [ ${#matching_vms[@]} -eq 0 ]; then
-        if [ "$UNPROTECT" != true ]; then
-            echo "No VMs found with tag ${TAG_VALUE_NAME} in region ${LOCATION} for project ${PROJECT_ID}"
-        else
-            echo "No VMs found with tag ${TAG_VALUE_NAME} in project ${PROJECT_ID}"
-        fi
-        return 1
-    else
-        if [ "$UNPROTECT" != true ]; then
-            echo "Found ${#matching_vms[@]} VMs with matching tag in region ${LOCATION} in project ${PROJECT_ID}"
-        else
-            echo "Found ${#matching_vms[@]} VMs with matching tag in project ${PROJECT_ID}"
-        fi
-
-        # Process each matching VM
-        for vm_info in "${matching_vms[@]}"; do
-            IFS=, read -r vm_name vm_zone <<< "$vm_info"
-            echo "==============================================="
+            echo "Processing VM: $vm_name"
             if process_vm "${PROJECT_ID}" "${vm_name}" "${vm_zone}"; then
                 echo "✓ Successfully processed VM: ${vm_name}"
             else
                 echo "✗ Failed to process VM: ${vm_name}"
-                SCRIPT_SUCCESS=false  # Set script success flag to false if any VM processing fails
+                SCRIPT_SUCCESS=false
             fi
-        done
-    fi
+        fi
+    done <<< "$vm_list"
+
+    return 0
 }
 
 # Main function
 main() {
-
     if [ "$UNPROTECT" != true ]; then
         # Verify Backup Project ID
         if ! gcloud projects describe "${BACKUP_PROJECT_ID}" &>/dev/null; then
