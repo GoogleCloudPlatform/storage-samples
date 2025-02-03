@@ -23,12 +23,6 @@ This guide will enable you to:
 - [Tag Viewer](https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing#required-permissions)  
 - [Backup and DR Backup User](https://cloud.google.com/iam/docs/understanding-roles#backupdr.backupUser)
 
-
-**You will need to obtain the following Role on the Project where your VMs exist with tags:**
-
-- [Tag Viewer](https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing#required-permissions)  
-- [Backup and DR Backup User](https://cloud.google.com/iam/docs/understanding-roles#backupdr.backupUser)
-
 **Please ensure that:**
 
 1. The backup vault service agent for the vault you intend to use to backup your VMs has the `roles/backupdr.computeEngineOperator` role in the VM project. If you do not have the correct Role for the backup vault provided in your VM Project, the script will succeed but you will encounter a failure error.  
