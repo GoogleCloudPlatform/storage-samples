@@ -11,6 +11,9 @@ Check out some of the samples found on in folders of this repository. Samples in
 
 1. [cloud-run-scheduler](cloud-run-scheduler) -  Read how to set up a Cloud Run Job in Google Cloud Platform to set up your Tag Based Protection script to run on an hourly, daily, weekly or monthly basis.
 
+1. [protection-summary](protection-summary) -  This script provides a way to bulk protect all your unprotected instances. An [unprotected instance](https://cloud.google.com/backup-disaster-recovery/docs/backup-admin/protection-summary?_gl=1*1tsvrak*_ga*NzkzNTI2MzUuMTczOTQwNjczNQ..*_ga_WH2QY8WWF5*MTczOTQwNDU4Ni42LjEuMTczOTQwOTczNC40OC4wLjA.) is an instance that has no active backup plan or snapshot schedule attached to the VM instance.
+
+   
 ## Setup
 
 1. Enable the Backup and DR Service API in your GCP Project. 
