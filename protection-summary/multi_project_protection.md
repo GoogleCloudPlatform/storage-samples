@@ -1,4 +1,4 @@
-# Multi-Project Protection Using gCloud for Vaulted Backups
+# Bulk Protection Using gCloud for Unprotected resources from Protection Summary
 
 **Author:** Ashika Ganesh  
 **Last Updated:** Feb 12, 2025  
@@ -87,6 +87,9 @@ chmod +x apply_protection_summary.sh
 ```
 - Creates new **backup plan associations** for VMs in those projects.  
 - If a VM is already protected or in a different region, it’s skipped automatically.
+
+> **Note**: The BackupDR endpoint only **refreshes hourly**, so newly protected VMs may remain listed as “unprotected” for up to an hour. If you try and re-run this script, it will show as if it is re-protecting instances since the endpoint has not refreshed. Please wait and try again later.
+
 
 ### 7. Verify Changes
 - **Script Output**: Look for “Successfully applied backup plan…” messages.  
