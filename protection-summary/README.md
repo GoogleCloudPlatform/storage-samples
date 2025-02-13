@@ -1,4 +1,4 @@
-# Bulk Protection Using gCloud for Unprotected resources from Protection Summary
+# Bulk Protection using gCloud for Unprotected resources from Protection Summary
 
 **Author:** Ashika Ganesh  
 **Last Updated:** Feb 12, 2025  
@@ -13,7 +13,7 @@
 
 ## Overview
 
-This document shows you how to manage backups for your **Google Compute Engine VMs** across **multiple projects** using a Bash script named `apply_protection_summary.sh`. You can easily associate a Backup and DR **backup plan** with any unprotected VMs in your projects, ensuring a consistent level of protection.
+This document shows you how to bulk protect your **Google Compute Engine VMs** across **multiple projects** using a Bash script named `apply_protection_summary.sh`. You can easily associate a Backup and DR **backup plan** with any unprotected VMs in your projects, ensuring a consistent level of protection. This script leverages the [Backup and DR Protection Summary](https://cloud.google.com/backup-disaster-recovery/docs/backup-admin/protection-summary?_gl=1*1tsvrak*_ga*NzkzNTI2MzUuMTczOTQwNjczNQ..*_ga_WH2QY8WWF5*MTczOTQwNDU4Ni42LjEuMTczOTQwOTczNC40OC4wLjA.) feature to view and apply protection for unprotected VMs. 
 
 **Key Features**:
 - **Multi-project support**: Specify one or more projects at once (e.g., `--projects="proj-a,proj-b"`).  
