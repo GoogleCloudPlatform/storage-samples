@@ -153,7 +153,7 @@ echo "📌 The following VMs **will be affected**:"
 
 for line in "${VM_LIST[@]}"; do
     # line looks like:
-    #   "tags-test,//compute.googleapis.com/projects/897811120320/zones/asia-east1-c/instances/tags-test"
+    #   "tags-test,//compute.googleapis.com/projects/12345678910/zones/asia-east1-c/instances/tags-test"
     VM_NAME="$(echo "$line" | cut -d',' -f1)"
     RESOURCE="$(echo "$line" | cut -d',' -f2)"
 
