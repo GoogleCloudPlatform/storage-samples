@@ -109,3 +109,8 @@ After setting up the above, view the following files to learn how to further enh
 
 - **[Automation.md](../cloud-run-scheduler/Automation.md)**: Read how to set up a Cloud Run Job in Google Cloud Platform to set up your script to run on an hourly, daily, weekly or monthly basis.   
 - **[Backup_Protect_Report_UserGuide.md](../project-reporting/Backup_Protect_Report_UserGuide.md)**: Read how to export a .txt file that shows you the overall protection summary for your Project or Folder. 
+
+
+Current Known Issues:
+1. This script does not remove backup plan associations when the attached backup plan is using a deafult-backup-plan assigned by GCE.
+   
