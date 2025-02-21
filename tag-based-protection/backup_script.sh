@@ -394,10 +394,8 @@ process_vm() {
                 current_backup_plan=$(get_associated_backup_plan "$PROJECT_ID" "$vm_id")
                 echo "Current backup plan: $current_backup_plan"
 
-                # Extract the project number from the current_backup_plan
-                local project_number=$(echo "$current_backup_plan" | cut -d/ -f2)
-                # Compare the current backup plan with the desired backup plan
-                local expected_backup_plan="projects/${project_number}/locations/${LOCATION}/backupPlans/${BACKUP_PLAN}"
+                # Compare the current backup plan with the expected backup plan.
+                local expected_backup_plan="projects/${BACKUP_PROJECT_ID}/locations/${LOCATION}/backupPlans/${BACKUP_PLAN}"
                 echo "Expected backup plan: $expected_backup_plan"
 
                 if [[ "$current_backup_plan" == "$expected_backup_plan" ]]; then
@@ -405,12 +403,30 @@ process_vm() {
                     return 0
                 else
                     echo "VM $vm_name is associated with a different backup plan. Updating..."
-                    # Delete the existing association
-                    if ! delete_association "$PROJECT_ID" "${vm_name}-backup-association" "${LOCATION}"; then
+
+                    # Retrieve the numeric project number for the VM's project.
+                    project_number=$(gcloud projects describe "${PROJECT_ID}" --format="value(projectNumber)")
+
+                    # Retrieve the BPA ID for the VM resource using the numeric project number.
+                    bpa_id=$(gcloud alpha backup-dr backup-plan-associations list \
+                      --filter="resource=projects/${project_number}/zones/${vm_zone}/instances/${vm_id}" \
+                      --format=json | jq -r '.[].name | split("/") | .[-1]')
+
+                    if [[ -z "$bpa_id" ]]; then
+                      echo "ERROR: Could not find BPA ID for VM $vm_name"
+                      return 1
+                    fi
+
+                    # Build the full BPA association name.
+                    association_full_name="projects/${PROJECT_ID}/locations/${LOCATION}/backupPlanAssociations/${bpa_id}"
+
+                    echo "Deleting association with BPA ID: ${association_full_name}"
+                    if ! delete_association "$PROJECT_ID" "$association_full_name" "${LOCATION}"; then
                         echo "ERROR: Failed to delete existing backup plan association for VM $vm_name."
                         return 1
                     fi
-                    # Create a new association with the correct backup plan
+
+                    # Create a new association with the correct backup plan.
                     if ! create_association "$PROJECT_ID" "$vm_name" "$vm_zone" "$vm_id"; then
                         echo "ERROR: Failed to create new backup plan association for VM $vm_name."
                         return 1
