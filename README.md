@@ -13,6 +13,9 @@ Check out some of the samples found on in folders of this repository. Samples in
 
 1. [protection-summary](protection-summary) -  This script provides a way to bulk protect all your unprotected instances. An [unprotected instance](https://cloud.google.com/backup-disaster-recovery/docs/backup-admin/protection-summary?_gl=1*1tsvrak*_ga*NzkzNTI2MzUuMTczOTQwNjczNQ..*_ga_WH2QY8WWF5*MTczOTQwNDU4Ni42LjEuMTczOTQwOTczNC40OC4wLjA.) is an instance that has no active backup plan or snapshot schedule attached to the VM instance.
 
+1. [list-protection-summary](list-protection-summary) - Protection summary, a new capability in the Google Cloud Backup and DR management experience, allows you to view the backup configuration state of your resources. Protection summary helps you to easily identify resources that have not been configured for backup, discover those that are configured and identify areas where you can enhance your data protection.
+   Using this script you can easily get the protection summary information across one or more projects, folders or organizations. Using the script you can get information about all unprotected workloads in a single shot or what was the last succesful backup time.
+
    
 ## Setup
 
