@@ -25,14 +25,14 @@ Clone the script repository from GitHub and navigate to the project directory:
 
 ```bash
 git clone https://github.com/GoogleCloudPlatform/storage-samples.git
-cd "storage-samples/NetApp Volumes/Autogrow"
+cd "storage-samples/NetApp Volumes/autogrow"
 ```
 ### 1. Required roles
 
-Get the relevant information about your project.
+Add and get the relevant information about your project.
 ```bash
-PROJECT_ID="pgarevalo-prod"
-REGION="europe-southwest1"
+PROJECT_ID="xxxxxxxxxxxx"
+REGION="xxxxxxxxxxxxxxxx"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(project_number)")
 ```
 Create a service account with NetApp Volumes permissions to run the function.
