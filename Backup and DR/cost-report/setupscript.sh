@@ -635,7 +635,7 @@ run_main() {
 COST_REPORT_VERSION="0.1"
 echo "BackupDR Cost Report Deployment Script Version: ${COST_REPORT_VERSION}"
 
-set -e
+set -eE
 # set -x # Uncomment for detailed debugging
 
 if [ ! -f "$CONFIG_FILE" ]; then
