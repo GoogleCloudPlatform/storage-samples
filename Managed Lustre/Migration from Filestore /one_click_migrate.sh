@@ -2,35 +2,38 @@
 # ==============================================================================
 #  🚀 GCP FILESTORE TO MANAGED LUSTRE ONE-CLICK AUTOMATED PRODUCTION MIGRATION
 # ==============================================================================
-#  Instructions: Update the variables below, then run:
-#    chmod +x one_click_migrate.sh && ./one_click_migrate.sh
+#  Supports both:
+#   1. Environment Variable overrides (Set once in shell before execution)
+#   2. Interactive Terminal Wizard (Prompts user if run without variables)
 # ==============================================================================
 
-# --- [CUSTOMER INPUT VARIABLES - CONFIGURE ONCE] ---
-PROJECT_ID="ag-lustre"                          # GCP Project ID
-ZONE="asia-northeast1-b"                       # GCP Zone where Filestore & Lustre reside
-VPC_NETWORK="ag-lustre-network"                 # VPC Network Name
+# --- [DEFAULT PLACEHOLDERS - CAN BE OVERRIDDEN BY SHELL EXPORT OR WIZARD] ---
+PROJECT_ID="${PROJECT_ID:-my-gcp-project}"            # GCP Project ID
+ZONE="${ZONE:-us-central1-a}"                         # GCP Zone
+VPC_NETWORK="${VPC_NETWORK:-default}"                 # VPC Network Name
 
 # --- SOURCE FILESTORE CONFIGURATION ---
-FILESTORE_IP="10.146.0.5"                      # Source Filestore NFS Endpoint IP
-FILESTORE_SHARE="/fs"                         # Source Filestore Export Share Name
-SRC_SUBDIR=""                                  # Subfolder inside share (leave empty for full export)
+FILESTORE_IP="${FILESTORE_IP:-10.100.0.2}"           # Source Filestore NFS IP
+FILESTORE_SHARE="${FILESTORE_SHARE:-/vol1}"           # Source Filestore Share
+SRC_SUBDIR="${SRC_SUBDIR:-}"                        # Subfolder inside share
 
 # --- DESTINATION MANAGED LUSTRE CONFIGURATION ---
-LUSTRE_MOUNT="10.92.0.3@tcp:/cmekfs"           # Target Lustre Mount String (from gcloud lustre describe)
-DST_USER_FOLDER="my-data"                      # Non-root squashed directory owned by user on Lustre
-DST_SUBDIR="migrated_from_filestore"           # Target destination subfolder name
+LUSTRE_MOUNT="${LUSTRE_MOUNT:-10.200.0.2@tcp:/lustrefs}" # Target Lustre Mount String
+DST_USER_FOLDER="${DST_USER_FOLDER:-user-data}"       # Non-root squashed directory owned by user
+DST_SUBDIR="${DST_SUBDIR:-migrated_from_filestore}"  # Target subfolder name
 
 # --- COMPUTE & PERFORMANCE TUNING ---
-WORKER_MACHINE_TYPE="n2-standard-16"          # Compute VM Machine Type (recommend >= 16 vCPU)
-PARALLEL_WORKERS="32"                          # Threads for fpsync (recommend vCPU * 2)
-AUTO_DELETE_WORKER="false"                     # Set to "true" to destroy worker VM after success
+WORKER_MACHINE_TYPE="${WORKER_MACHINE_TYPE:-n2-standard-16}"
+PARALLEL_WORKERS="${PARALLEL_WORKERS:-32}"
+AUTO_DELETE_WORKER="${AUTO_DELETE_WORKER:-false}"
+INTERACTIVE_MODE="${INTERACTIVE_MODE:-auto}"       # Set to "true" to force wizard, "false" to skip
 # ==============================================================================
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 log_step() {
@@ -55,6 +58,58 @@ fail_exit() {
     exit 1
 }
 
+# ==============================================================================
+#  INTERACTIVE WIZARD PATTERN (IF RUN WITHOUT SETTING ENV VARS)
+# ==============================================================================
+if [ "${INTERACTIVE_MODE}" = "true" ] || [ -t 0 -a "${INTERACTIVE_MODE}" != "false" ]; then
+    echo -e "${CYAN}======================================================================${NC}"
+    echo -e "${CYAN}🧙 GCP FILESTORE TO MANAGED LUSTRE INTERACTIVE WIZARD${NC}"
+    echo -e "${CYAN}======================================================================${NC}"
+    echo -e "Press [ENTER] to accept default values shown in brackets.\n"
+
+    DETECTED_PROJ=$(gcloud config get-value project 2>/dev/null || echo "my-gcp-project")
+    read -p "1. GCP Project ID [${PROJECT_ID:-$DETECTED_PROJ}]: " VAL
+    PROJECT_ID="${VAL:-${PROJECT_ID:-$DETECTED_PROJ}}"
+
+    read -p "2. GCP Zone [${ZONE}]: " VAL
+    ZONE="${VAL:-$ZONE}"
+
+    read -p "3. VPC Network Name [${VPC_NETWORK}]: " VAL
+    VPC_NETWORK="${VAL:-$VPC_NETWORK}"
+
+    read -p "4. Source Filestore Endpoint IP [${FILESTORE_IP}]: " VAL
+    FILESTORE_IP="${VAL:-$FILESTORE_IP}"
+
+    read -p "5. Source Filestore Export Share [${FILESTORE_SHARE}]: " VAL
+    FILESTORE_SHARE="${VAL:-$FILESTORE_SHARE}"
+
+    read -p "6. Target Managed Lustre Mount String [${LUSTRE_MOUNT}]: " VAL
+    LUSTRE_MOUNT="${VAL:-$LUSTRE_MOUNT}"
+
+    read -p "7. Target User Folder on Lustre (Avoids Root Squash) [${DST_USER_FOLDER}]: " VAL
+    DST_USER_FOLDER="${VAL:-$DST_USER_FOLDER}"
+
+    read -p "8. Parallel Sync Threads (fpsync) [${PARALLEL_WORKERS}]: " VAL
+    PARALLEL_WORKERS="${VAL:-$PARALLEL_WORKERS}"
+
+    echo -e "\n${CYAN}----------------------------------------------------------------------${NC}"
+    echo -e "📋 CONFIGURATION REVIEW:"
+    echo -e "   Project ID:        ${PROJECT_ID}"
+    echo -e "   Zone / Network:    ${ZONE} / ${VPC_NETWORK}"
+    echo -e "   Source Filestore:  ${FILESTORE_IP}:${FILESTORE_SHARE}${SRC_SUBDIR}"
+    echo -e "   Target Lustre:     ${LUSTRE_MOUNT} (${DST_USER_FOLDER}/${DST_SUBDIR})"
+    echo -e "   Worker Compute:    ${WORKER_MACHINE_TYPE} (${PARALLEL_WORKERS} threads)"
+    echo -e "${CYAN}----------------------------------------------------------------------${NC}"
+    read -p "Proceed with launch? (Y/n): " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
+        echo "Aborted by user."
+        exit 0
+    fi
+fi
+
+# ==============================================================================
+#  STEP 1: PRE-FLIGHT VALIDATION & ENVIRONMENT CHECKS
+# ==============================================================================
 log_step "1/7" "Executing Pre-flight Environment & Credential Checks"
 
 if ! command -v gcloud &> /dev/null; then
@@ -73,6 +128,9 @@ if ! gcloud compute networks describe "${VPC_NETWORK}" --format="value(name)" &>
 fi
 log_ok "VPC network confirmed: ${VPC_NETWORK}"
 
+# ==============================================================================
+#  STEP 2: AUTOMATED VPC FIREWALL & ROUTE PEERING REPAIR
+# ==============================================================================
 log_step "2/7" "Verifying & Repairing VPC Firewalls and Service Peering Routes"
 
 FW_NAME="allow-lustre-lnet-automation"
@@ -108,6 +166,9 @@ else
     log_warn "No service-networking peering found on ${VPC_NETWORK}. Assuming direct VPC connection."
 fi
 
+# ==============================================================================
+#  STEP 3: GENERATE WORKER STARTUP PAYLOAD SCRIPT
+# ==============================================================================
 log_step "3/7" "Generating Self-Contained Migration Worker Execution Payload"
 
 LUSTRE_IP=$(echo "${LUSTRE_MOUNT}" | cut -d'@' -f1)
