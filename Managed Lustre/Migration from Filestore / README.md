@@ -29,7 +29,7 @@ Follow these exact steps to run the **One-Click Automated Migration Utility**.
 ---
 
 ### **Step 1: Open Google Cloud Shell (or your Local Terminal)**
-Log into the Google Cloud Console for project `ag-lustre` and click the **Cloud Shell (`>_`)** button at the top right of the browser window. 
+Log into the Google Cloud Console for your GCP project (e.g. `my-gcp-project`) and click the **Cloud Shell (`>_`)** button at the top right of the browser window. 
 
 *(Alternatively, open your local Mac/Linux laptop terminal where `gcloud` is installed).*
 
