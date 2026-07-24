@@ -24,18 +24,25 @@ This document provides a production-grade, **single-command ("One-Click") automa
 
 ## ⚙️ Section 1: Step-by-Step Customer Execution Runbook
 
-Choose **Option A** (Paste Environment Block Once) or **Option B** (Interactive Command Line Wizard).
+Follow these exact steps to run the **One-Click Automated Migration Utility**.
 
 ---
 
-### 🌟 Option A: "Set Once in Shell" Environment Export Block (Recommended)
-Copy the block below, paste it **ONCE** into your Google Cloud Shell terminal, and press `Enter`. 
+### **Step 1: Open Google Cloud Shell (or your Local Terminal)**
+Log into the Google Cloud Console for project `ag-lustre` and click the **Cloud Shell (`>_`)** button at the top right of the browser window. 
 
-> 💡 **Tip:** Edit only this single 6-line block! From that moment on, every step in this guide uses your exact variables automatically.
+*(Alternatively, open your local Mac/Linux laptop terminal where `gcloud` is installed).*
+
+---
+
+### **Step 2: "Set Once in Shell" Environment Export Block**
+Copy the single block below, paste it **ONCE** into your Google Cloud Shell terminal, edit your endpoints, and press **`Enter`**. 
+
+> 💡 **Tip:** Edit only this single 7-line block! From that moment on, every step in this migration runbook uses your exact variables automatically.
 
 ```bash
 # ==============================================================================
-# 📋 PASTE THIS ONCE IN CLOUD SHELL (EDIT YOUR 5 CUSTOMER ENDPOINTS HERE)
+# 📋 PASTE THIS ONCE IN CLOUD SHELL (EDIT YOUR CUSTOMER ENDPOINTS HERE)
 # ==============================================================================
 export PROJECT_ID="ag-lustre"                          # Your GCP Project ID
 export ZONE="asia-northeast1-b"                       # Your GCP Zone
@@ -49,20 +56,8 @@ export DST_USER_FOLDER="my-data"                      # Non-root squashed direct
 
 ---
 
-### 🌟 Option B: Interactive Terminal Setup Wizard
-If you prefer not to edit files, simply download and run the script without setting variables. The built-in **Interactive Terminal Wizard** will prompt you on-screen with smart defaults:
-
-```bash
-curl -O https://raw.githubusercontent.com/ashika789/storage-samples/main/Managed%20Lustre/Migration%20from%20Filestore/one_click_migrate.sh
-chmod +x one_click_migrate.sh
-./one_click_migrate.sh
-```
-
----
-
-### **Step-by-Step Manual Script Creation (Optional)**
-
-If creating `one_click_migrate.sh` manually via `nano`:
+### **Step 3: Create the Script File**
+Create a new file named `one_click_migrate.sh` using `nano` text editor:
 
 ```bash
 nano one_click_migrate.sh
