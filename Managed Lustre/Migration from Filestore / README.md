@@ -56,8 +56,20 @@ export DST_USER_FOLDER="user-data"                    # Non-root squashed direct
 
 ---
 
-### **Step 3: Create & Launch Script (One Copy-Paste!)**
-Copy and paste this single block into Cloud Shell. It creates `one_click_migrate.sh`, grants permissions, and launches immediately:
+### **Step 3: Download & Execute Script (Zero Editing Required)**
+Because the script automatically picks up your exported environment variables from Step 2, you do **not** need to edit any lines of code manually!
+
+#### **Option 1: Official One-Line Download (Recommended)**
+```bash
+curl -O https://raw.githubusercontent.com/GoogleCloudPlatform/storage-samples/main/Managed%20Lustre/Migration%20from%20Filestore/one_click_migrate.sh
+chmod +x one_click_migrate.sh
+./one_click_migrate.sh
+```
+
+---
+
+#### **Option 2: Direct Shell Generator (Use this to test before pushing to GitHub)**
+If testing in Cloud Shell before pushing `one_click_migrate.sh` to your remote repo, paste this block to write the script file locally:
 
 ```bash
 cat << 'EOF' > one_click_migrate.sh
@@ -195,7 +207,8 @@ if [ "${AUTO_DELETE_WORKER}" = "true" ]; then gcloud compute instances delete "$
 echo -e "\n${GREEN}🎉 ONE-CLICK MIGRATION FULLY COMPLETE & VERIFIED!${NC}"
 EOF
 chmod +x one_click_migrate.sh
-</details>
+./one_click_migrate.sh
+```
 
 ---
 
