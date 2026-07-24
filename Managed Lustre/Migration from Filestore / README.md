@@ -1,7 +1,7 @@
 # 🚀 One-Click Automated GCP Filestore to Managed Lustre Migration Toolkit
 
 **Version:** 2.0 (Production Enterprise Automation)  
-**Author:** Google Cloud Storage Engineering & PM Team  
+**Author:** Ashika Ganesh (PM Team)
 **Last Updated:** July 24, 2026  
 
 ---
@@ -22,9 +22,34 @@ This document provides a production-grade, **single-command ("One-Click") automa
 
 ---
 
-## ⚙️ Section 1: Customer One-Time Variable Configuration
+## ⚙️ Section 1: Step-by-Step Customer Execution Runbook
 
-Customers copy the block below and save it as `one_click_migrate.sh` on their local laptop or Google Cloud Shell. Edit **only** the top variable configuration section.
+Follow these exact 5 steps to create and run the **One-Click Automated Migration Utility**.
+
+---
+
+### **Step 1: Open Google Cloud Shell (or your Local Terminal)**
+Log into the Google Cloud Console for project `ag-lustre` and click the **Cloud Shell (`>_`)** button at the top right of the browser window. 
+
+*(Alternatively, open your local Mac/Linux laptop terminal where `gcloud` is installed).*
+
+---
+
+### **Step 2: Create the Script File**
+Create a new file named `one_click_migrate.sh` using `nano` text editor:
+
+```bash
+nano one_click_migrate.sh
+```
+
+---
+
+### **Step 3: Paste & Configure Your Variables**
+Copy the entire code block below and paste it into `nano`. 
+
+> 💡 **Tip:** Edit only the **`CUSTOMER INPUT VARIABLES`** section at the very top (lines 10–27) to match your Filestore IP, Lustre mount string, and VPC network name.
+
+Press **`Ctrl + O`**, hit **`Enter`** to save, then press **`Ctrl + X`** to exit `nano`.
 
 ```bash
 #!/bin/bash
@@ -326,6 +351,26 @@ echo -e "${GREEN}   Source Filestore:   ${FILESTORE_IP}:${FILESTORE_SHARE}${NC}"
 echo -e "${GREEN}   Destination Lustre: ${LUSTRE_MOUNT} (${DST_USER_FOLDER}/${DST_SUBDIR})${NC}"
 echo -e "${GREEN}======================================================================${NC}"
 ```
+
+---
+
+### **Step 4: Make the Script Executable**
+Grant execute permissions to the script:
+
+```bash
+chmod +x one_click_migrate.sh
+```
+
+---
+
+### **Step 5: Run with One Click! 🚀**
+Launch the automated migration utility:
+
+```bash
+./one_click_migrate.sh
+```
+
+Sit back and watch real-time colored progress indicators (`▶ [1/7] ...`, `▶ [5/7] ...`) as the script automatically handles VPC firewalling, peering route export, DKMS module compiling, multi-threaded `fpsync`, parity validation, and cleanup!
 
 ---
 
