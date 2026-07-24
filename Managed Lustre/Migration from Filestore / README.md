@@ -44,49 +44,56 @@ Copy the single block below, paste it **ONCE** into your Google Cloud Shell term
 # ==============================================================================
 # 📋 PASTE THIS ONCE IN CLOUD SHELL (EDIT YOUR CUSTOMER ENDPOINTS HERE)
 # ==============================================================================
-export PROJECT_ID="ag-lustre"                          # Your GCP Project ID
-export ZONE="asia-northeast1-b"                       # Your GCP Zone
-export VPC_NETWORK="ag-lustre-network"                 # Your VPC Network Name
-export FILESTORE_IP="10.146.0.5"                      # Source Filestore Endpoint IP
-export FILESTORE_SHARE="/fs"                         # Source Filestore Export Share
-export LUSTRE_MOUNT="10.92.0.3@tcp:/cmekfs"           # Target Lustre Mount String
-export DST_USER_FOLDER="my-data"                      # Non-root squashed directory owned by user
+export PROJECT_ID="my-gcp-project"                    # Your GCP Project ID
+export ZONE="us-central1-a"                           # Your GCP Zone (e.g. us-central1-a, asia-northeast1-b)
+export VPC_NETWORK="default"                          # Your VPC Network Name (e.g. default, my-vpc)
+export FILESTORE_IP="10.100.0.2"                      # Source Filestore Endpoint IP (e.g. 10.x.x.x)
+export FILESTORE_SHARE="/vol1"                        # Source Filestore Export Share Name (e.g. /fs, /vol1)
+export LUSTRE_MOUNT="10.200.0.2@tcp:/lustrefs"        # Target Lustre Mount String (from gcloud lustre describe)
+export DST_USER_FOLDER="user-data"                    # Non-root squashed directory owned by user on Lustre
 # ==============================================================================
 ```
 
 ---
 
-### **Step 3: Create the Script File**
-Create a new file named `one_click_migrate.sh` using `nano` text editor:
+### **Step 3: Download & Execute Script (Zero Editing Required)**
+Because the script automatically picks up your exported environment variables from Step 2, you do **not** need to edit any lines of code manually!
+
+Simply download the script, make it executable, and launch:
 
 ```bash
-nano one_click_migrate.sh
+curl -O https://raw.githubusercontent.com/ashika789/storage-samples/main/Managed%20Lustre/Migration%20from%20Filestore/one_click_migrate.sh
+chmod +x one_click_migrate.sh
+./one_click_migrate.sh
 ```
 
-Paste the entire bash code block below:
+*(Or if you prefer to copy the script code into your own repository, copy the full source block below as-is without changing any variables):*
+
+<details>
+<summary>👉 Click to expand full source code of one_click_migrate.sh</summary>
 
 ```bash
 #!/bin/bash
 # ==============================================================================
 #  🚀 GCP FILESTORE TO MANAGED LUSTRE ONE-CLICK AUTOMATED PRODUCTION MIGRATION
 # ==============================================================================
-#  Instructions: Update the variables below, then run:
-#    chmod +x one_click_migrate.sh && ./one_click_migrate.sh
+#  Note: This script automatically reads exported shell environment variables:
+#  $PROJECT_ID, $ZONE, $VPC_NETWORK, $FILESTORE_IP, $LUSTRE_MOUNT, etc.
 # ==============================================================================
 
 # --- [CUSTOMER INPUT VARIABLES - CONFIGURE ONCE] ---
-PROJECT_ID="ag-lustre"                          # GCP Project ID
-ZONE="asia-northeast1-b"                       # GCP Zone where Filestore & Lustre reside
-VPC_NETWORK="ag-lustre-network"                 # VPC Network Name
+PROJECT_ID="my-gcp-project"                    # GCP Project ID
+ZONE="us-central1-a"                           # GCP Zone where Filestore & Lustre reside
+VPC_NETWORK="default"                          # VPC Network Name
 
 # --- SOURCE FILESTORE CONFIGURATION ---
-FILESTORE_IP="10.146.0.5"                      # Source Filestore NFS Endpoint IP
-FILESTORE_SHARE="/fs"                         # Source Filestore Export Share Name
+FILESTORE_IP="10.100.0.2"                      # Source Filestore NFS Endpoint IP
+FILESTORE_SHARE="/vol1"                        # Source Filestore Export Share Name
 SRC_SUBDIR=""                                  # Subfolder inside share (leave empty for full export)
 
 # --- DESTINATION MANAGED LUSTRE CONFIGURATION ---
-LUSTRE_MOUNT="10.92.0.3@tcp:/cmekfs"           # Target Lustre Mount String (from gcloud lustre describe)
-DST_USER_FOLDER="my-data"                      # Non-root squashed directory owned by user on Lustre
+LUSTRE_MOUNT="10.200.0.2@tcp:/lustrefs"        # Target Lustre Mount String (from gcloud lustre describe)
+DST_USER_FOLDER="user-data"                    # Non-root squashed directory owned by user on Lustre
 DST_SUBDIR="migrated_from_filestore"           # Target destination subfolder name
 
 # --- COMPUTE & PERFORMANCE TUNING ---
@@ -365,26 +372,7 @@ echo -e "${GREEN}   Source Filestore:   ${FILESTORE_IP}:${FILESTORE_SHARE}${NC}"
 echo -e "${GREEN}   Destination Lustre: ${LUSTRE_MOUNT} (${DST_USER_FOLDER}/${DST_SUBDIR})${NC}"
 echo -e "${GREEN}======================================================================${NC}"
 ```
-
----
-
-### **Step 4: Make the Script Executable**
-Grant execute permissions to the script:
-
-```bash
-chmod +x one_click_migrate.sh
-```
-
----
-
-### **Step 5: Run with One Click! 🚀**
-Launch the automated migration utility:
-
-```bash
-./one_click_migrate.sh
-```
-
-Sit back and watch real-time colored progress indicators (`▶ [1/7] ...`, `▶ [5/7] ...`) as the script automatically handles VPC firewalling, peering route export, DKMS module compiling, multi-threaded `fpsync`, parity validation, and cleanup!
+</details>
 
 ---
 
