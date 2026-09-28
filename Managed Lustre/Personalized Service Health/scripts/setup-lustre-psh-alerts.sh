@@ -23,13 +23,17 @@
 #                                        in your Lustre regions
 #
 # Usage:
-#   ./setup-lustre-psh-alerts.sh -r REGIONS (-e EMAIL | -c CHANNEL) [-g] [-n] PROJECT_ID...
+#   ./setup-lustre-psh-alerts.sh -r REGIONS (-e EMAIL | -c CHANNEL) [-g] [-u] [-n] PROJECT_ID...
 #
 #   -r REGIONS  Comma-separated Lustre regions, e.g. us-east4,asia-northeast1
 #   -e EMAIL    Reuse or create an email notification channel in each project.
 #   -c CHANNEL  Use an existing channel (ID or full name). One project only,
 #               because notification channels are per project.
 #   -g          Do not add 'global' to the dependency location filter.
+#   -u          Update policies that already exist: add any missing regions
+#               and the notification channel. Other edits (extra channels,
+#               filter changes) are kept. Without -u, existing policies are
+#               left alone and the script tells you if they differ.
 #   -n          Dry run: show what would change without changing anything.
 #
 # Requirements: gcloud (beta component), python3.
@@ -49,18 +53,20 @@ CHANNEL=""
 REGIONS=""
 INCLUDE_GLOBAL=1
 DRY_RUN=0
+UPDATE=0
 
 usage() {
-  sed -n '17,39p' "$0"
+  sed -n '17,44p' "$0"
   exit 1
 }
 
-while getopts "r:e:c:gnh" opt; do
+while getopts "r:e:c:gunh" opt; do
   case "${opt}" in
     r) REGIONS="${OPTARG}" ;;
     e) EMAIL="${OPTARG}" ;;
     c) CHANNEL="${OPTARG}" ;;
     g) INCLUDE_GLOBAL=0 ;;
+    u) UPDATE=1 ;;
     n) DRY_RUN=1 ;;
     *) usage ;;
   esac
@@ -110,7 +116,17 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 
 for PROJECT in "$@"; do
   echo "=== ${PROJECT}"
-  run gcloud services enable servicehealth.googleapis.com --project="${PROJECT}"
+  # Enable only the APIs that are off, so users who can't enable APIs can
+  # still run the script on projects that are already set up.
+  ENABLED="$(gcloud services list --enabled --project="${PROJECT}" \
+    --format="value(config.name)" 2>/dev/null || true)"
+  for API in servicehealth.googleapis.com monitoring.googleapis.com; do
+    if [[ $'\n'"${ENABLED}"$'\n' == *$'\n'"${API}"$'\n'* ]]; then
+      echo "${API}: already enabled"
+    else
+      run gcloud services enable "${API}" --project="${PROJECT}"
+    fi
+  done
 
   # Resolve the notification channel for this project.
   if [[ -n "${CHANNEL}" ]]; then
@@ -159,8 +175,68 @@ PY
 
     EXISTING="$(gcloud monitoring policies list --project="${PROJECT}" \
       --filter="displayName=\"${DISPLAY_NAME}\"" --format="value(name)")"
+    EXISTING="${EXISTING%%$'\n'*}"
     if [[ -n "${EXISTING}" ]]; then
-      echo "Exists, skipping: ${DISPLAY_NAME} (${EXISTING})"
+      # Compare the existing policy with what we would create: are all the
+      # regions and the notification channel there? Write a merged copy that
+      # keeps everything else (extra channels, custom filter edits).
+      gcloud monitoring policies describe "${EXISTING}" --format=json \
+        > "${WORK_DIR}/existing.json"
+      CHANGES="$(python3 - "${WORK_DIR}/existing.json" "${RENDERED}" \
+        "${WORK_DIR}/merged.json" <<'PY'
+import json
+import re
+import sys
+
+existing_path, rendered_path, merged_path = sys.argv[1:4]
+with open(existing_path) as f:
+  existing = json.load(f)
+with open(rendered_path) as f:
+  rendered = json.load(f)
+
+# Matches the location group written by this script, e.g.
+# impactedLocations=~"(^|[^a-z0-9-])(us-east4|global)(-[a-z])?([^a-z0-9-]|$)"
+LOCATIONS = re.compile(
+    r'(impactedLocations=~"\(\^\|\[\^a-z0-9-\]\)\()([a-z0-9|-]+)(\))')
+changes = []
+for i, condition in enumerate(existing.get("conditions", [])):
+  log = condition.get("conditionMatchedLog")
+  if not log or i >= len(rendered["conditions"]):
+    continue
+  want = LOCATIONS.search(
+      rendered["conditions"][i]["conditionMatchedLog"]["filter"])
+  have = LOCATIONS.search(log.get("filter", ""))
+  if not want or not have:
+    continue
+  have_list = have.group(2).split("|")
+  missing = [r for r in want.group(2).split("|") if r not in have_list]
+  if missing:
+    changes.append("add regions " + ",".join(missing))
+    log["filter"] = LOCATIONS.sub(
+        lambda m: m.group(1) + "|".join(have_list + missing) + m.group(3),
+        log["filter"], count=1)
+channels = existing.setdefault("notificationChannels", [])
+for channel in rendered["notificationChannels"]:
+  if channel not in channels:
+    channels.append(channel)
+    changes.append("add channel " + channel)
+for field in ("name", "creationRecord", "mutationRecord"):
+  existing.pop(field, None)
+with open(merged_path, "w") as f:
+  json.dump(existing, f, indent=2)
+print("; ".join(changes))
+PY
+)"
+      if [[ -z "${CHANGES}" ]]; then
+        echo "Up to date: ${DISPLAY_NAME}"
+      elif [[ "${UPDATE}" -eq 1 ]]; then
+        echo "Updating: ${DISPLAY_NAME} (${CHANGES})"
+        run gcloud monitoring policies update "${EXISTING}" \
+          --policy-from-file="${WORK_DIR}/merged.json" --format="none"
+      else
+        echo "Exists but differs: ${DISPLAY_NAME} (${CHANGES})."
+        echo "  Re-run with -u to update it."
+      fi
     else
       echo "Creating: ${DISPLAY_NAME}"
       run gcloud monitoring policies create --project="${PROJECT}" \
@@ -168,6 +244,9 @@ PY
     fi
   done
 done
+
+# quickstart.sh prints its own summary.
+[[ -z "${PSH_FROM_QUICKSTART:-}" ]] || exit 0
 
 cat <<'EOF'
 

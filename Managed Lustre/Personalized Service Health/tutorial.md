@@ -25,35 +25,32 @@ Then point Cloud Shell at it:
 gcloud config set project <walkthrough-project-id/>
 ```
 
-## Run the quickstart
+## Run the setup
 
-Make sure you're in the sample folder:
-
-```sh
-cd ~/storage-samples/"Managed Lustre/Personalized Service Health"
-```
-
-Then run this one command:
+Run this one command:
 
 ```sh
-./quickstart.sh
+cd ~/storage-samples/"Managed Lustre/Personalized Service Health" && ./quickstart.sh
 ```
 
-It will:
+Answer a few questions. Pressing **Enter** accepts the suggested answer.
 
-1.  Find your Managed Lustre instances and their regions.
-2.  Use your email address for alerts. Press **Enter** to accept it, or type a
-    team alias.
-3.  Show you what it's going to do and ask **once** before changing anything.
-4.  Create the alerts.
-5.  Offer to send a test alert. Say **Y** to see it work.
+1.  **Project:** press **Enter** to use the one you picked.
+2.  **Client projects:** if your Lustre clients (GPU VMs, GKE clusters) run in
+    other projects, type their IDs. This matters: incidents on Compute Engine
+    and Persistent Disk only reach projects that use those products.
+3.  **Email:** press **Enter** to use yours, or type a team alias.
+4.  **Go ahead?** press **Enter**.
+5.  **Send a test alert?** press **Enter**. The script waits 3 minutes for the
+    new alerts to become active, then sends it.
 
-**Tip:** if your Lustre clients (GPU VMs, GKE clusters) are in other projects,
-add them too, for example `./quickstart.sh <walkthrough-project-id/> my-clients-project`.
-Incidents on Persistent Disk and Compute Engine are only delivered to projects
-that use those products.
+Before it changes anything, the script checks your permissions. If a role is
+missing, it stops and tells you which role you need, with a command you can
+send to a project owner. Run it again after you get the role.
 
 ## Check your email
+
+At the end, the script prints a checklist. Every line should have a ✔.
 
 If you sent the test alert, you'll get two emails from
 `alerting-noreply@google.com` within about 5 minutes, both marked
@@ -62,7 +59,7 @@ If you sent the test alert, you'll get two emails from
 *   an **Error** alert for Managed Lustre;
 *   a **Warning** alert for Persistent Disk.
 
-You can also see them on the
+No email? Check your Spam folder, then the
 [Alerting page](https://console.cloud.google.com/monitoring/alerting). Test
 alerts close by themselves after 30 minutes.
 
@@ -82,4 +79,6 @@ affect your Managed Lustre instances.
 
 *   See current and past incidents on the
     [Service Health dashboard](https://console.cloud.google.com/servicehealth/incidents).
-*   To remove the alerts later, run `./scripts/remove-lustre-psh-alerts.sh -e YOUR_EMAIL <walkthrough-project-id/>`.
+*   To add a project or region later, run `./quickstart.sh` again. It updates
+    the existing alerts.
+*   To remove the alerts, run `./scripts/remove-lustre-psh-alerts.sh -e YOUR_EMAIL <walkthrough-project-id/>`.
