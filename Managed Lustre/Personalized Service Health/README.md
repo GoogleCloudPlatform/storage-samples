@@ -5,29 +5,30 @@ Get an email when a Google Cloud incident might affect your
 instances, including incidents on the products Managed Lustre runs on
 (Persistent Disk, Compute Engine, and VPC networking).
 
-## Quick start: 1 click, about 5 minutes
+## Quick start: about 5 minutes
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/storage-samples&cloudshell_tutorial=Managed%20Lustre%2FPersonalized%20Service%20Health%2Ftutorial.md)
+**1. Open Cloud Shell.** It's already signed in and has everything installed.
 
-1. Click **Open in Cloud Shell**. A guided tutorial opens next to a terminal
-   that's already signed in.
-2. Pick your project and run the command the tutorial shows you.
-3. Press **Enter** a few times. The script finds your Lustre instances and
-   regions, uses your email address, and asks once before making changes.
-4. Say **Y** to the test alert. You'll get two test emails within about 5
-   minutes.
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/)
 
-That's it. There's nothing to install and no files to edit.
-
-**Prefer to paste one command?** Open
-[Cloud Shell](https://shell.cloud.google.com/?show=terminal) (or any terminal
-with the gcloud CLI, signed in) and run:
+**2. Paste this and press Enter:**
 
 ```sh
-git clone --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git
-cd "storage-samples/Managed Lustre/Personalized Service Health"
-./quickstart.sh
+if [ -d ~/storage-samples ]; then git -C ~/storage-samples pull -q; else git clone -q --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples; fi
+cd ~/storage-samples/"Managed Lustre/Personalized Service Health" && ./quickstart.sh
 ```
+
+**3. Press Enter a few times.** The script finds your Lustre instances and
+regions, uses your email address, and asks once before making changes.
+
+**4. Say Y to the test alert.** You'll get two test emails within about 5
+minutes.
+
+That's it. There's nothing to install and no files to edit. The same commands
+work in any terminal that has the gcloud CLI installed and signed in.
+
+**Prefer step-by-step guidance in a side panel?** In step 2, replace
+`./quickstart.sh` with `teachme tutorial.md`.
 
 **Prefer clicking in the console, or Terraform?** See
 [Other ways to set up](#set-up-the-alerts).
@@ -57,7 +58,7 @@ cd "storage-samples/Managed Lustre/Personalized Service Health"
 | Path | Purpose |
 |---|---|
 | [`quickstart.sh`](quickstart.sh) | **Start here.** One interactive command that detects your settings and sets everything up |
-| [`tutorial.md`](tutorial.md) | Guided Cloud Shell tutorial (opened by the button above) |
+| [`tutorial.md`](tutorial.md) | Guided Cloud Shell tutorial (run `teachme tutorial.md` in Cloud Shell) |
 | [`policies/psh-alert-managed-lustre.json`](policies/psh-alert-managed-lustre.json) | Alert policy for Managed Lustre incidents |
 | [`policies/psh-alert-lustre-dependencies.json`](policies/psh-alert-lustre-dependencies.json) | Alert policy for Persistent Disk, Compute Engine, and VPC incidents in your Lustre regions |
 | [`scripts/setup-lustre-psh-alerts.sh`](scripts/setup-lustre-psh-alerts.sh) | Non-interactive setup for automation and many projects |
