@@ -12,14 +12,15 @@ instances, including incidents on the products Managed Lustre runs on
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/)
 
 **2. Paste this and press Enter:**
-Run this inside your cloud shell to enter all variables within a guided tutorial pane (Preferred) :
+
+Run this inside your cloud shell to enter all variables within a guided tutorial pane (Preferred Method) :
 ```sh
 if [ -d ~/storage-samples ]; then git -C ~/storage-samples pull -q; else git clone -q --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples; fi
 cd ~/storage-samples/"Managed Lustre/Personalized Service Health" && teachme tutorial.md
 ```
 
 
-Run this inside your cloud shell to enter all variables directly in the shell:
+OR run this inside your cloud shell to enter all variables directly in the shell:
 ```sh
 if [ -d ~/storage-samples ]; then git -C ~/storage-samples pull -q; else git clone -q --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples; fi
 cd ~/storage-samples/"Managed Lustre/Personalized Service Health" && ./quickstart.sh
