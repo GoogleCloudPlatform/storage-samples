@@ -1,0 +1,40 @@
+{
+  "displayName": "[PSH] Managed Lustre dependencies (PD / Compute Engine / VPC) in Lustre regions",
+  "severity": "WARNING",
+  "documentation": {
+    "content": "## Incident on a product that Managed Lustre depends on\n\nManaged Lustre runs on Persistent Disk, Compute Engine and VPC networking. An incident on one of these products in a region where you run Managed Lustre instances **may** affect Lustre performance or availability, even if no Lustre incident has been posted yet. Check your Lustre client metrics and the linked event.\n\n[Open in Service Health dashboard](https://console.cloud.google.com/servicehealth/incidentDetails/projects%2F${resource.labels.resource_container}%2Flocations%2F${resource.labels.location}%2Fevents%2F${resource.labels.event_id}?project=${resource.labels.resource_container})\n\n**Title:** ${log.extracted_label.title}\n\n**Relevance to this project:** ${log.extracted_label.relevance}\n\n**State:** ${log.extracted_label.state} / ${log.extracted_label.detailedState}\n\n**Impacted products:** ${log.extracted_label.impactedProducts}\n\n**Impacted locations:** ${log.extracted_label.impactedLocations}\n\n**Latest update:** ${log.extracted_label.description}",
+    "mimeType": "text/markdown"
+  },
+  "userLabels": {
+    "source": "personalized-service-health",
+    "scope": "managed-lustre-dependencies"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "New incident, or state/relevance change, on a Lustre dependency in a Lustre region",
+      "conditionMatchedLog": {
+        "filter": "resource.type=\"servicehealth.googleapis.com/Event\" AND jsonPayload.@type=\"type.googleapis.com/google.cloud.servicehealth.logging.v1.EventLog\" AND jsonPayload.category=\"INCIDENT\" AND jsonPayload.impactedProductIds=~\"SzESm2Ux129pjDGKWD68|L3ggmi3Jy4xJmgodFA9K|BSGtCUnz6ZmyajsjgTKv\" AND jsonPayload.impactedLocations=~\"(^|[^a-z0-9-])(REGION_REGEX)(-[a-z])?([^a-z0-9-]|$)\" AND jsonPayload.relevance!=\"NOT_IMPACTED\" AND (labels.\"servicehealth.googleapis.com/new_event\"=true OR labels.\"servicehealth.googleapis.com/updated_fields\"=~\"'state'|'relevance'\")",
+        "labelExtractors": {
+          "title": "EXTRACT(jsonPayload.title)",
+          "description": "EXTRACT(jsonPayload.description)",
+          "relevance": "EXTRACT(jsonPayload.relevance)",
+          "state": "EXTRACT(jsonPayload.state)",
+          "detailedState": "EXTRACT(jsonPayload.detailedState)",
+          "impactedProducts": "EXTRACT(jsonPayload.impactedProducts)",
+          "impactedLocations": "EXTRACT(jsonPayload.impactedLocations)"
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "300s"
+    },
+    "autoClose": "1800s"
+  },
+  "notificationChannels": [
+    "projects/PROJECT_ID/notificationChannels/NOTIFICATION_CHANNEL_ID"
+  ],
+  "enabled": true
+}

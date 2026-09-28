@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "logName": "projects/PROJECT_ID/logs/servicehealth.googleapis.com%2Factivity",
+      "resource": {
+        "type": "servicehealth.googleapis.com/Event",
+        "labels": {
+          "resource_container": "PROJECT_ID",
+          "location": "global",
+          "event_id": "TEST-LUSTRE-NOT-REAL"
+        }
+      },
+      "labels": {
+        "servicehealth.googleapis.com/new_event": "true",
+        "servicehealth.googleapis.com/updated_fields": "[]"
+      },
+      "jsonPayload": {
+        "@type": "type.googleapis.com/google.cloud.servicehealth.logging.v1.EventLog",
+        "category": "INCIDENT",
+        "detailedCategory": "CONFIRMED_INCIDENT",
+        "title": "TEST - NOT A REAL INCIDENT - Managed Lustre",
+        "description": "Test entry for the Managed Lustre Service Health alert policy.",
+        "impactedLocations": "['REGION']",
+        "impactedProducts": "['Google Cloud Managed Lustre']",
+        "impactedProductIds": "['6NIyMyXGmDuhgEOGEy2z']",
+        "startTime": "2026-01-01T00:00:00Z",
+        "updateTime": "2026-01-01T00:00:00Z",
+        "state": "ACTIVE",
+        "detailedState": "CONFIRMED",
+        "relevance": "RELATED"
+      }
+    },
+    {
+      "logName": "projects/PROJECT_ID/logs/servicehealth.googleapis.com%2Factivity",
+      "resource": {
+        "type": "servicehealth.googleapis.com/Event",
+        "labels": {
+          "resource_container": "PROJECT_ID",
+          "location": "global",
+          "event_id": "TEST-PD-NOT-REAL"
+        }
+      },
+      "labels": {
+        "servicehealth.googleapis.com/new_event": "true",
+        "servicehealth.googleapis.com/updated_fields": "[]"
+      },
+      "jsonPayload": {
+        "@type": "type.googleapis.com/google.cloud.servicehealth.logging.v1.EventLog",
+        "category": "INCIDENT",
+        "detailedCategory": "CONFIRMED_INCIDENT",
+        "title": "TEST - NOT A REAL INCIDENT - Persistent Disk",
+        "description": "Test entry for the Managed Lustre dependency Service Health alert policy.",
+        "impactedLocations": "['ZONE']",
+        "impactedProducts": "['Persistent Disk']",
+        "impactedProductIds": "['SzESm2Ux129pjDGKWD68']",
+        "startTime": "2026-01-01T00:00:00Z",
+        "updateTime": "2026-01-01T00:00:00Z",
+        "state": "ACTIVE",
+        "detailedState": "CONFIRMED",
+        "relevance": "PARTIALLY_RELATED"
+      }
+    }
+  ]
+}

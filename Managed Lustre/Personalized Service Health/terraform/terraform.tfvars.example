@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars and edit.
+project_ids        = ["my-lustre-project-1", "my-lustre-clients-project"]
+lustre_regions     = ["us-east4", "asia-northeast1"]
+notification_email = "storage-oncall@example.com"
+
+# Optional: existing channels (PagerDuty, Slack, Pub/Sub, webhooks) per project.
+# extra_notification_channels = {
+#   "my-lustre-project-1" = ["projects/my-lustre-project-1/notificationChannels/1234567890"]
+# }
+
+# Optional: leave out incidents whose location is "global".
+# include_global_incidents = false

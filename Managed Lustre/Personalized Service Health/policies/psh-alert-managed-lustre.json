@@ -1,0 +1,41 @@
+{
+  "displayName": "[PSH] Managed Lustre incidents (new + all updates)",
+  "severity": "ERROR",
+  "documentation": {
+    "content": "## Google Cloud Managed Lustre incident\n\n[Open in Service Health dashboard](https://console.cloud.google.com/servicehealth/incidentDetails/projects%2F${resource.labels.resource_container}%2Flocations%2F${resource.labels.location}%2Fevents%2F${resource.labels.event_id}?project=${resource.labels.resource_container})\n\n**Title:** ${log.extracted_label.title}\n\n**Relevance to this project:** ${log.extracted_label.relevance}\n\n**State:** ${log.extracted_label.state} / ${log.extracted_label.detailedState}\n\n**Impacted products:** ${log.extracted_label.impactedProducts}\n\n**Impacted locations:** ${log.extracted_label.impactedLocations}\n\n**Start time:** ${log.extracted_label.startTime}\n\n**Latest update:** ${log.extracted_label.description}",
+    "mimeType": "text/markdown"
+  },
+  "userLabels": {
+    "source": "personalized-service-health",
+    "scope": "managed-lustre"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Service Health event for Google Cloud Managed Lustre",
+      "conditionMatchedLog": {
+        "filter": "resource.type=\"servicehealth.googleapis.com/Event\" AND jsonPayload.@type=\"type.googleapis.com/google.cloud.servicehealth.logging.v1.EventLog\" AND jsonPayload.category=\"INCIDENT\" AND jsonPayload.impactedProductIds=~\"6NIyMyXGmDuhgEOGEy2z\" AND jsonPayload.relevance!=\"NOT_IMPACTED\"",
+        "labelExtractors": {
+          "title": "EXTRACT(jsonPayload.title)",
+          "description": "EXTRACT(jsonPayload.description)",
+          "relevance": "EXTRACT(jsonPayload.relevance)",
+          "state": "EXTRACT(jsonPayload.state)",
+          "detailedState": "EXTRACT(jsonPayload.detailedState)",
+          "impactedProducts": "EXTRACT(jsonPayload.impactedProducts)",
+          "impactedLocations": "EXTRACT(jsonPayload.impactedLocations)",
+          "startTime": "EXTRACT(jsonPayload.startTime)"
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "300s"
+    },
+    "autoClose": "1800s"
+  },
+  "notificationChannels": [
+    "projects/PROJECT_ID/notificationChannels/NOTIFICATION_CHANNEL_ID"
+  ],
+  "enabled": true
+}
