@@ -160,9 +160,20 @@ if [[ -z "${SEND_TEST}" ]]; then
   fi
 fi
 if [[ "${SEND_TEST}" == "yes" ]]; then
+  # Newly created log-based alert policies take a few minutes to start
+  # evaluating logs. A test entry written right away is silently missed.
+  WAIT="${TEST_WAIT_SECONDS:-180}"
+  info "Waiting $((WAIT / 60)) min for the new alert policies to become active..."
+  while [[ "${WAIT}" -gt 0 ]]; do
+    printf '\r  %3ss left ' "${WAIT}"
+    sleep 10
+    WAIT=$((WAIT - 10))
+  done
+  printf '\r              \r'
   "${SCRIPT_DIR}/scripts/send-test-events.sh" "${TEST_PROJECT}" "${TEST_ZONE}"
   echo
   info "You should get 2 emails from alerting-noreply@google.com within about 5 minutes."
+  info "No email? Check Spam, then Monitoring > Alerting > Incidents in the console."
 fi
 
 # --- 8. Done ----------------------------------------------------------------

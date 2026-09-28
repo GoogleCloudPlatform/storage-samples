@@ -304,7 +304,10 @@ cd scripts
 ./send-test-events.sh PROJECT_ID us-east4-a
 ```
 
-Use a zone in one of the regions you passed to `-r`. Within a few minutes:
+Use a zone in one of the regions you passed to `-r`. If you just created the
+policies, wait about 3 minutes first: new policies take a few minutes to start
+watching logs, and a test sent before then is silently missed. Within a few
+minutes:
 
 - two incidents open in **Monitoring > Alerting**: one Error (Lustre), one
   Warning (dependency);
