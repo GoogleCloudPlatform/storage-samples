@@ -27,7 +27,14 @@ gcloud config set project <walkthrough-project-id/>
 
 ## Run the quickstart
 
-Run this one command:
+Go to the sample folder. This works whether or not Cloud Shell already cloned
+the repository for you:
+
+```sh
+cd ~/cloudshell_open/storage-samples 2>/dev/null || { [ -d ~/storage-samples ] || git clone --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples; cd ~/storage-samples; }; cd "Managed Lustre/Personalized Service Health"
+```
+
+Then run this one command:
 
 ```sh
 ./quickstart.sh

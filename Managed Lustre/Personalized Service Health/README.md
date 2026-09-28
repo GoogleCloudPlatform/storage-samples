@@ -7,11 +7,11 @@ instances, including incidents on the products Managed Lustre runs on
 
 ## Quick start: 1 click, about 5 minutes
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/ORG/managed-lustre-service-health-alerts&cloudshell_tutorial=tutorial.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/storage-samples&cloudshell_tutorial=Managed%20Lustre%2FPersonalized%20Service%20Health%2Ftutorial.md)
 
 1. Click **Open in Cloud Shell**. A guided tutorial opens next to a terminal
    that's already signed in.
-2. Pick your project and run `./quickstart.sh`.
+2. Pick your project and run the command the tutorial shows you.
 3. Press **Enter** a few times. The script finds your Lustre instances and
    regions, uses your email address, and asks once before making changes.
 4. Say **Y** to the test alert. You'll get two test emails within about 5
@@ -19,11 +19,13 @@ instances, including incidents on the products Managed Lustre runs on
 
 That's it. There's nothing to install and no files to edit.
 
-**Prefer your own terminal?** You need the gcloud CLI and to be signed in:
+**Prefer to paste one command?** Open
+[Cloud Shell](https://shell.cloud.google.com/?show=terminal) (or any terminal
+with the gcloud CLI, signed in) and run:
 
 ```sh
-git clone https://github.com/ORG/managed-lustre-service-health-alerts.git
-cd managed-lustre-service-health-alerts
+git clone --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git
+cd "storage-samples/Managed Lustre/Personalized Service Health"
 ./quickstart.sh
 ```
 
@@ -154,11 +156,11 @@ What this means for Managed Lustre:
 
 Choose one option. All options create the same two alert policies.
 
-### Option 1: gcloud script (recommended; one or many projects)
+### Option 1: gcloud script, non-interactive (one or many projects)
 
 ```sh
-git clone https://github.com/ORG/managed-lustre-service-health-alerts.git
-cd managed-lustre-service-health-alerts/scripts
+git clone --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git
+cd "storage-samples/Managed Lustre/Personalized Service Health/scripts"
 
 # Preview the changes without making any.
 ./setup-lustre-psh-alerts.sh -n -r us-east4,asia-northeast1 \

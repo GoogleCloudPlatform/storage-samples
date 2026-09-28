@@ -175,4 +175,4 @@ for PROJECT in "${PROJECTS[@]}"; do
 done
 echo
 info "Add Slack, PagerDuty or SMS: open the alert policy and edit its notification channels."
-info "Remove everything later: ${SCRIPT_DIR}/scripts/remove-lustre-psh-alerts.sh -e ${EMAIL} ${PROJECTS[*]}"
+info "Remove everything later: \"${SCRIPT_DIR}/scripts/remove-lustre-psh-alerts.sh\" -e ${EMAIL} ${PROJECTS[*]}"
