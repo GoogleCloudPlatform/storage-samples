@@ -37,8 +37,6 @@ You can find it in the
 [project picker](https://console.cloud.google.com/projectselector2/home/dashboard)
 in the **ID** column. Use the ID, not the project name.
 
-Click **Start** to begin.
-
 ## Run the setup
 
 Click the **Copy to Cloud Shell** button on these commands, then press
