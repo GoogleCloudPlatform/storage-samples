@@ -1,5 +1,7 @@
 # Get alerted when Google Cloud incidents affect Managed Lustre
 
+## Overview
+
 <walkthrough-tutorial-duration duration="5"></walkthrough-tutorial-duration>
 
 In about 5 minutes you'll set up email alerts for:
@@ -12,9 +14,8 @@ In about 5 minutes you'll set up email alerts for:
 Everything runs in this Cloud Shell. There's nothing to install. This panel
 has all the steps, so you can close the GitHub page.
 
-### What the setup changes
-
-In your project (and any client projects you add), it:
+**What the setup changes.** In your project (and any client projects you
+add), it:
 
 1.  **Turns on 2 Google Cloud APIs, if they're off:**
     *   **Service Health API:** Google Cloud writes incidents that may affect
@@ -30,12 +31,12 @@ billing settings. Before it changes anything, the script shows you this list
 for your project and asks you to confirm. You can undo everything with one
 command.
 
-### Before you start
-
-Have the **ID** of the project that contains your Managed Lustre instances.
-You can find it in the
+**Before you start,** have the **ID** of the project that contains your
+Managed Lustre instances. You can find it in the
 [project picker](https://console.cloud.google.com/projectselector2/home/dashboard)
 in the **ID** column. Use the ID, not the project name.
+
+Click **Start** to begin.
 
 ## Run the setup
 
