@@ -121,9 +121,14 @@ for PROJECT in "$@"; do
   ENABLED="$(gcloud services list --enabled --project="${PROJECT}" \
     --format="value(config.name)" 2>/dev/null || true)"
   for API in servicehealth.googleapis.com monitoring.googleapis.com; do
+    case "${API}" in
+      servicehealth.*) API_NAME="Service Health API" ;;
+      *) API_NAME="Cloud Monitoring API" ;;
+    esac
     if [[ $'\n'"${ENABLED}"$'\n' == *$'\n'"${API}"$'\n'* ]]; then
-      echo "${API}: already enabled"
+      echo "${API_NAME} (${API}): already on"
     else
+      echo "${API_NAME} (${API}): turning on..."
       run gcloud services enable "${API}" --project="${PROJECT}"
     fi
   done
@@ -134,23 +139,24 @@ for PROJECT in "$@"; do
     if [[ "${CHANNEL_NAME}" != projects/* ]]; then
       CHANNEL_NAME="projects/${PROJECT}/notificationChannels/${CHANNEL}"
     fi
+    echo "Notification channel: using ${CHANNEL_NAME}"
   else
     CHANNEL_NAME="$(gcloud beta monitoring channels list --project="${PROJECT}" \
       --filter="type=\"email\" AND labels.email_address=\"${EMAIL}\"" \
       --format="value(name)" --limit=1)"
-    if [[ -z "${CHANNEL_NAME}" ]]; then
-      if [[ "${DRY_RUN}" -eq 1 ]]; then
-        echo "DRY RUN: would create an email channel for ${EMAIL}"
-        CHANNEL_NAME="projects/${PROJECT}/notificationChannels/NEW_CHANNEL"
-      else
-        CHANNEL_NAME="$(gcloud beta monitoring channels create --project="${PROJECT}" \
-          --display-name="Managed Lustre service health - ${EMAIL}" \
-          --type=email --channel-labels=email_address="${EMAIL}" \
-          --format="value(name)")"
-      fi
+    if [[ -n "${CHANNEL_NAME}" ]]; then
+      echo "Email channel for ${EMAIL}: already exists, reusing it"
+    elif [[ "${DRY_RUN}" -eq 1 ]]; then
+      echo "DRY RUN: would create an email channel for ${EMAIL}"
+      CHANNEL_NAME="projects/${PROJECT}/notificationChannels/NEW_CHANNEL"
+    else
+      CHANNEL_NAME="$(gcloud beta monitoring channels create --project="${PROJECT}" \
+        --display-name="Managed Lustre service health - ${EMAIL}" \
+        --type=email --channel-labels=email_address="${EMAIL}" \
+        --format="value(name)")"
+      echo "Email channel for ${EMAIL}: created"
     fi
   fi
-  echo "Notification channel: ${CHANNEL_NAME}"
 
   for TEMPLATE in "${TEMPLATES[@]}"; do
     RENDERED="${WORK_DIR}/${PROJECT}-${TEMPLATE}"
@@ -173,8 +179,11 @@ print(policy["displayName"])
 PY
 )"
 
+    # gcloud warns "filter keys were not present in any resource" when there
+    # are no policies yet; that's expected here, so hide just that line.
     EXISTING="$(gcloud monitoring policies list --project="${PROJECT}" \
-      --filter="displayName=\"${DISPLAY_NAME}\"" --format="value(name)")"
+      --filter="displayName=\"${DISPLAY_NAME}\"" --format="value(name)" \
+      2> >(grep -v 'filter keys were not present' >&2))"
     EXISTING="${EXISTING%%$'\n'*}"
     if [[ -n "${EXISTING}" ]]; then
       # Compare the existing policy with what we would create: are all the
@@ -228,9 +237,9 @@ print("; ".join(changes))
 PY
 )"
       if [[ -z "${CHANGES}" ]]; then
-        echo "Up to date: ${DISPLAY_NAME}"
+        echo "Alert policy \"${DISPLAY_NAME}\": already exists and is up to date"
       elif [[ "${UPDATE}" -eq 1 ]]; then
-        echo "Updating: ${DISPLAY_NAME} (${CHANGES})"
+        echo "Alert policy \"${DISPLAY_NAME}\": already exists, updating it (${CHANGES})"
         run gcloud monitoring policies update "${EXISTING}" \
           --policy-from-file="${WORK_DIR}/merged.json" --format="none"
       else
@@ -238,7 +247,7 @@ PY
         echo "  Re-run with -u to update it."
       fi
     else
-      echo "Creating: ${DISPLAY_NAME}"
+      echo "Alert policy \"${DISPLAY_NAME}\": creating..."
       run gcloud monitoring policies create --project="${PROJECT}" \
         --policy-from-file="${RENDERED}"
     fi

@@ -161,12 +161,19 @@ if [[ ${#PROJECTS[@]} -eq 0 ]]; then
 fi
 [[ ${#PROJECTS[@]} -gt 0 && -n "${PROJECTS[0]}" ]] || die "no project given."
 
-# --- 3. Lustre regions (auto-detected) --------------------------------------
+# --- 3. Email ---------------------------------------------------------------
+if [[ -z "${EMAIL}" && "${CHECK_ONLY}" -eq 0 ]]; then
+  EMAIL="$(ask "Email address for alerts" "${ACCOUNT}")"
+  echo
+fi
+
+# --- 4. Lustre regions (auto-detected) --------------------------------------
 TEST_ZONE=""
 TEST_PROJECT=""
 REGIONS_TYPED=0
 if [[ -z "${REGIONS}" && "${CHECK_ONLY}" -eq 0 ]]; then
-  bold "Looking for your Managed Lustre instances..."
+  bold "Step 1 of 5: Finding your Managed Lustre instances (read-only)"
+  info "The regions they run in decide which infrastructure incidents you hear about."
   FOUND=""
   for PROJECT in "${PROJECTS[@]}"; do
     if ! NAMES="$(gcloud lustre instances list --location=- --project="${PROJECT}" \
@@ -208,24 +215,20 @@ if [[ -z "${REGIONS}" && "${CHECK_ONLY}" -eq 0 ]]; then
 fi
 REGIONS="${REGIONS// /}"
 
-# --- 4. Email ---------------------------------------------------------------
-if [[ -z "${EMAIL}" && "${CHECK_ONLY}" -eq 0 ]]; then
-  EMAIL="$(ask "Email address for alerts" "${ACCOUNT}")"
-  echo
-fi
-
 # --- 5-8. Set up (skipped with -c) ------------------------------------------
 TEST_SENT=0
 if [[ "${CHECK_ONLY}" -eq 0 ]]; then
 
   # --- 5. Permissions -------------------------------------------------------
   # Check up front, so a missing role doesn't stop the setup halfway through.
-  bold "Checking your permissions..."
+  bold "Step 2 of 5: Checking your permissions (read-only, nothing changes yet)"
   TOKEN="$(gcloud auth print-access-token 2>/dev/null || true)"
   MEMBER="user:${ACCOUNT}"
   [[ "${ACCOUNT}" != *.gserviceaccount.com ]] || MEMBER="serviceAccount:${ACCOUNT}"
   BLOCKED=0
   CAN_TEST=()   # projects where the account can write the test log entries
+  # Per-project state for the plan in step 3 (same order as PROJECTS).
+  SH_STATE=(); MON_STATE=(); CH_STATE=()
 
   for PROJECT in "${PROJECTS[@]}"; do
     # Permissions needed in every project.
@@ -233,17 +236,24 @@ if [[ "${CHECK_ONLY}" -eq 0 ]]; then
     # Enabling APIs is only needed if they're off.
     ENABLED="$(gcloud services list --enabled --project="${PROJECT}" \
       --format="value(config.name)" 2>/dev/null || true)"
+    STATES=()
     for API in servicehealth.googleapis.com monitoring.googleapis.com; do
-      if [[ $'\n'"${ENABLED}"$'\n' != *$'\n'"${API}"$'\n'* ]]; then
-        NEEDED+=" serviceusage.services.enable"
-        break
+      if [[ $'\n'"${ENABLED}"$'\n' == *$'\n'"${API}"$'\n'* ]]; then
+        STATES+=("already on, no change")
+      else
+        STATES+=("OFF, will be turned on")
+        [[ "${NEEDED}" == *serviceusage.services.enable* ]] || NEEDED+=" serviceusage.services.enable"
       fi
     done
+    SH_STATE+=("${STATES[0]}"); MON_STATE+=("${STATES[1]}")
     # Creating a channel is only needed if there isn't one for this email yet.
     if [[ -z "$(gcloud beta monitoring channels list --project="${PROJECT}" \
         --filter="type=\"email\" AND labels.email_address=\"${EMAIL}\"" \
         --format="value(name)" --limit=1 2>/dev/null || true)" ]]; then
       NEEDED+=" monitoring.notificationChannels.create"
+      CH_STATE+=("will be created")
+    else
+      CH_STATE+=("already exists, will be reused")
     fi
 
     RESULT="$(python3 - "${PROJECT}" "${TOKEN}" "${MEMBER}" ${NEEDED} <<'PY'
@@ -325,18 +335,38 @@ PY
   fi
 
   # --- 6. Confirm -----------------------------------------------------------
-  bold "Here's what will happen:"
-  info "Projects: ${PROJECTS[*]}"
-  info "Lustre regions: ${REGIONS} (plus global)"
-  info "Alerts go to: ${EMAIL}"
-  info "In each project: turn on the Service Health API (if it's off), create an"
-  info "email channel (if needed), and create 2 alert policies. If the alerts"
-  info "already exist, they're updated with any new regions or email."
+  REGION_LIST="${REGIONS//,/, }, global"
+  bold "Step 3 of 5: Review exactly what will change"
+  I=0
+  for PROJECT in "${PROJECTS[@]}"; do
+    echo
+    info "In project ${PROJECT}:"
+    info "  1. Turn on 2 Google Cloud APIs, if they're off:"
+    info "     - Service Health API (servicehealth.googleapis.com): ${SH_STATE[$I]}"
+    info "       Google Cloud writes incidents that may affect this project to its"
+    info "       Cloud Logging logs. The alerts below watch those logs."
+    info "     - Cloud Monitoring API (monitoring.googleapis.com): ${MON_STATE[$I]}"
+    info "       Runs the alert policies and sends the emails."
+    info "  2. Email notification channel for ${EMAIL}: ${CH_STATE[$I]}"
+    info "  3. Create 2 alert policies in Cloud Monitoring (or update them if they exist):"
+    info "     - \"[PSH] Managed Lustre incidents (new + all updates)\""
+    info "       Emails you when Google Cloud posts, updates, or closes an incident"
+    info "       for Managed Lustre that's relevant to this project."
+    info "     - \"[PSH] Managed Lustre dependencies (PD / Compute Engine / VPC) in Lustre regions\""
+    info "       Emails you about Persistent Disk, Compute Engine, or VPC incidents"
+    info "       in: ${REGION_LIST}."
+    I=$((I + 1))
+  done
   echo
-  confirm "Go ahead?" || { echo "  Nothing changed."; exit 1; }
+  info "Nothing else changes: your Lustre instances, VMs, networks, IAM"
+  info "permissions, and billing settings are not touched, and nothing is installed."
+  info "To undo it later: ./scripts/remove-lustre-psh-alerts.sh -e ${EMAIL} ${PROJECTS[*]}"
+  echo
+  confirm "Make these changes?" || { echo "  Nothing changed."; exit 1; }
   echo
 
   # --- 7. Create the alerts -------------------------------------------------
+  bold "Step 4 of 5: Making the changes"
   if ! PSH_FROM_QUICKSTART=1 "${SCRIPT_DIR}/scripts/setup-lustre-psh-alerts.sh" \
       -u -r "${REGIONS}" -e "${EMAIL}" "${PROJECTS[@]}"; then
     echo
@@ -349,17 +379,24 @@ PY
     TEST_PROJECT="${PROJECTS[0]}"
     TEST_ZONE="${REGIONS%%,*}-a"
   fi
+  bold "Step 5 of 5: Test alert (optional)"
   if [[ " ${CAN_TEST[*]:-} " != *" ${TEST_PROJECT} "* ]]; then
     if [[ "${SEND_TEST}" == "yes" ]]; then
       info "Skipping the test alert: you need Logs Writer in ${TEST_PROJECT}."
-      echo
+    else
+      info "Skipped: sending a test needs the Logs Writer role in ${TEST_PROJECT}."
     fi
+    echo
     SEND_TEST="no"
   fi
   if [[ -z "${SEND_TEST}" ]]; then
+    info "The test writes 2 fake incident entries, titled \"TEST - NOT A REAL"
+    info "INCIDENT\", to the Cloud Logging logs of ${TEST_PROJECT}: one for Managed"
+    info "Lustre and one for Persistent Disk in ${TEST_ZONE}. Each alert policy"
+    info "should send you 1 email. Nothing else is affected."
     if [[ "${ASSUME_YES}" -eq 1 ]]; then
       SEND_TEST="no"
-    elif confirm "Send a test alert to ${EMAIL} now? (clearly marked TEST, nothing real)"; then
+    elif confirm "Send the test alert to ${EMAIL} now?"; then
       SEND_TEST="yes"
     else
       SEND_TEST="no"
@@ -369,15 +406,18 @@ PY
     # Newly created log-based alert policies take a few minutes to start
     # evaluating logs. A test entry written right away is silently missed.
     WAIT="${TEST_WAIT_SECONDS:-180}"
-    info "Waiting $((WAIT / 60)) min for the new alert policies to become active..."
+    info "Waiting $((WAIT / 60)) min before sending. Nothing is running in the"
+    info "background: new alert policies need a few minutes before they start"
+    info "watching the logs, and a test sent sooner would be missed."
     while [[ "${WAIT}" -gt 0 ]]; do
-      printf '\r  %3ss left ' "${WAIT}"
-      sleep 10
-      WAIT=$((WAIT - 10))
+      info "  ${WAIT}s left..."
+      STEP=$((WAIT < 30 ? WAIT : 30))
+      sleep "${STEP}"
+      WAIT=$((WAIT - STEP))
     done
-    printf '\r              \r'
     if "${SCRIPT_DIR}/scripts/send-test-events.sh" "${TEST_PROJECT}" "${TEST_ZONE}" >/dev/null; then
       TEST_SENT=1
+      ok "Sent the 2 TEST entries to ${TEST_PROJECT}. Emails usually arrive within 5 minutes."
     else
       bad "Couldn't send the test alert. Try later: scripts/send-test-events.sh ${TEST_PROJECT} ${TEST_ZONE}"
     fi
@@ -459,8 +499,13 @@ done
 echo
 
 if [[ "${ALL_OK}" -ne 1 ]]; then
-  bold "NOT DONE: some items above are marked ✘."
-  info "Fix them and run ./quickstart.sh again; it's safe to re-run."
+  if [[ "${CHECK_ONLY}" -eq 1 ]]; then
+    bold "NOT SET UP: the alerts are missing or incomplete (✘ above)."
+    info "To set them up, run: ./quickstart.sh"
+  else
+    bold "NOT DONE: some items above are marked ✘."
+    info "Fix them and run ./quickstart.sh again; it's safe to re-run."
+  fi
   exit 1
 fi
 

@@ -40,7 +40,11 @@ The setup:
 - asks whether your Lustre clients run in other projects;
 - checks your permissions before changing anything, and tells you exactly
   which role to ask for if one is missing;
-- creates the alerts and sends a test alert;
+- shows exactly what it will change and asks before changing anything: it
+  turns on the Service Health and Cloud Monitoring APIs if they're off,
+  creates or reuses an email notification channel, and creates 2 alert
+  policies. It doesn't touch your Lustre instances, VMs, networks, or IAM;
+- sends a test alert if you want one;
 - ends with a checklist and a final line that says **Setup complete** or
   **NOT DONE**.
 
