@@ -7,32 +7,45 @@ instances, including incidents on the products Managed Lustre runs on
 
 ## Quick start: about 5 minutes
 
-This is the only thing you need to do.
+This is the only thing you need to do. You'll need the **ID** of the project
+that contains your Managed Lustre instances (in the
+[project picker](https://console.cloud.google.com/projectselector2/home/dashboard),
+**ID** column).
 
-**1. Open Cloud Shell.** It's already signed in and has everything installed.
+**1. Copy this command.** It downloads the setup files and opens a guided
+tutorial next to the terminal:
+
+```sh
+git clone -q --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples 2>/dev/null || git -C ~/storage-samples pull -q --ff-only
+cd ~/storage-samples/Managed*Lustre/Personalized*Service*Health && teachme tutorial.md
+```
+
+**2. Open Cloud Shell in a new tab.** Right-click the button and choose **Open
+link in new tab** (or Ctrl+click, Cmd+click on a Mac), so this page stays
+open. Cloud Shell is already signed in and has everything installed.
 
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/)
 
-**2. Paste this and press Enter.** It opens a guided tutorial next to the
-terminal:
-
-```sh
-if [ -d ~/storage-samples ]; then git -C ~/storage-samples pull -q; else git clone -q --depth 1 https://github.com/GoogleCloudPlatform/storage-samples.git ~/storage-samples; fi
-cd ~/storage-samples/"Managed Lustre/Personalized Service Health" && teachme tutorial.md
-```
+**3. Paste the command in the Cloud Shell terminal and press Enter.** The
+tutorial opens in a panel on the right and walks you through the rest. From
+here on, you can follow the panel instead of this page.
 
 Prefer to stay in the terminal? Replace `teachme tutorial.md` with
 `./quickstart.sh`.
 
-**3. Answer a few questions.** Press **Enter** to accept each suggestion. The
-setup:
+The setup:
 
-- finds your Managed Lustre instances and their regions;
+- asks for your project ID, finds your Managed Lustre instances and their
+  regions, and tells you why if it can't find any;
 - asks whether your Lustre clients run in other projects;
 - checks your permissions before changing anything, and tells you exactly
   which role to ask for if one is missing;
 - creates the alerts and sends a test alert;
-- ends with a checklist. When every line has a ✔, you're done.
+- ends with a checklist and a final line that says **Setup complete** or
+  **NOT DONE**.
+
+To confirm later that everything is in place, run `./quickstart.sh -c`. It
+changes nothing and ends with **All set** only if every item passes.
 
 You'll get two test emails from `alerting-noreply@google.com` within about 5
 minutes. Check Spam if you don't see them.
@@ -62,10 +75,15 @@ them. Details:
 
 ## Change, test, or remove
 
-Run these from `~/storage-samples/"Managed Lustre/Personalized Service Health"`.
+First go to the setup folder:
+
+```sh
+cd ~/storage-samples/Managed*Lustre/Personalized*Service*Health
+```
 
 | To | Run |
 |---|---|
+| Check that the alerts are in place | `./quickstart.sh -c PROJECT_ID...`. Changes nothing. Ends with **All set** only if every item passes. |
 | Add a project or region, or change the email | `./quickstart.sh` again. It updates the existing alerts instead of creating duplicates. |
 | Send another test alert | `./scripts/send-test-events.sh PROJECT_ID ZONE`, for example `us-east4-a`. Wait at least 5 minutes between tests. |
 | Remove the alerts | `./scripts/remove-lustre-psh-alerts.sh -e EMAIL PROJECT_ID` (add `-n` to preview) |
