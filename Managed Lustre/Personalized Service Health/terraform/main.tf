@@ -135,7 +135,7 @@ locals {
 
   # "$${" renders a literal "${" so that Cloud Monitoring, not Terraform,
   # substitutes these variables when the notification is sent.
-  dashboard_link = "[Open in Service Health dashboard](https://console.cloud.google.com/servicehealth/incidentDetails/projects%2F$${resource.labels.resource_container}%2Flocations%2F$${resource.labels.location}%2Fevents%2F$${resource.labels.event_id}?project=$${resource.labels.resource_container})"
+  dashboard_link = "[Open in Service Health dashboard](https://console.cloud.google.com/servicehealth/incidentDetails/projects%2F$${resource.labels.resource_container}%2Flocations%2F$${resource.labels.location}%2Fevents%2F$${resource.labels.event_id}?project=$${resource.labels.resource_container})\n\n*Test alert? The link above shows \"incident not found\". That's expected: test events aren't real Service Health incidents. Real incidents open normally. All incidents: [Service Health](https://console.cloud.google.com/servicehealth/incidents?project=$${resource.labels.resource_container}).*"
 
   incident_details = join("\n\n", [
     "**Title:** $${log.extracted_label.title}",

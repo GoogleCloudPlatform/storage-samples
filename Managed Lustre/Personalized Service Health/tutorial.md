@@ -95,6 +95,10 @@ If you sent the test alert, you'll get two emails from
 *   an **Error** alert for Managed Lustre;
 *   a **Warning** alert for Persistent Disk.
 
+The **Open in Service Health dashboard** link in a test email shows
+"The incident requested was not found". That's expected: the test events are
+not real Service Health incidents. For a real incident, the link opens it.
+
 No email after 10 minutes? Check your Spam folder, then the
 [Alerting page](https://console.cloud.google.com/monitoring/alerting) for
 open incidents. Test alerts close by themselves after 30 minutes.

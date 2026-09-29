@@ -492,6 +492,7 @@ for PROJECT in "${PROJECTS[@]}"; do
   fi
   if [[ "${TEST_SENT}" -eq 1 && "${PROJECT}" == "${TEST_PROJECT}" ]]; then
     ok "Test alert sent: expect 2 emails from alerting-noreply@google.com in ~5 min (check Spam)"
+    info "  (In test emails, the Service Health link says \"incident not found\". That's expected.)"
   fi
   info "  Alerts:         https://console.cloud.google.com/monitoring/alerting?project=${PROJECT}"
   info "  Service Health: https://console.cloud.google.com/servicehealth/incidents?project=${PROJECT}"
